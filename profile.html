@@ -1055,143 +1055,193 @@
     </footer>
    <script src="wishlistmodal.js"></script> 
 <script>
-   document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
-    const USER_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user'; // e.g., https://.../user
+    const API = {
+        getUser: 'YOUR_GET_USER_API_ENDPOINT',      // e.g., https://.../user
+        updateUser: 'YOUR_UPDATE_USER_API_ENDPOINT', // e.g., https://.../user (with PUT method)
+        changePassword: 'YOUR_CHANGE_PASSWORD_API_ENDPOINT', // e.g., https://.../change-password
+        logout: 'YOUR_LOGOUT_API_ENDPOINT' // e.g., https://.../logout
+    };
 
     // --- ELEMENT SELECTORS ---
     const avatarInitialsEl = document.getElementById('avatarInitials');
     const profileNameEl = document.getElementById('profileName');
     const profileEmailEl = document.getElementById('profileEmail');
-    const firstNameInput = document.getElementById('firstName');
-    const lastNameInput = document.getElementById('lastName');
-    const emailInput = document.getElementById('email');
     const sectionTitleEl = document.getElementById('section-title');
     const navLinks = document.querySelectorAll('.profile-nav .nav-link');
     const sections = document.querySelectorAll('.profile-section');
+    
+    // Forms & Buttons
+    const profileForm = document.getElementById('profile-form');
+    const privacyForm = document.getElementById('privacy-form');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    /**
-     * This is the main function that runs when the page loads.
-     * It checks for a login session and fetches user data.
-     */
+    // --- HELPER FUNCTIONS ---
+    function showNotification(message, type = 'success') {
+        const container = document.getElementById('notificationContainer');
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        container.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    // --- CORE FUNCTIONS ---
+
     async function initializeProfilePage() {
         const accessToken = sessionStorage.getItem('accessToken');
-
-        // 1. Protect the page: If no token, redirect to login
         if (!accessToken) {
             window.location.href = 'login.html';
-            return; // Stop further execution
+            return;
         }
 
-        // 2. Fetch user data from our secure endpoint
         try {
-            const response = await fetch(USER_API_URL, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
+            const response = await fetch(API.getUser, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
             });
-
-            if (response.status === 401 || response.status === 403) {
-                // Token is invalid or expired
-                handleLogout(); // Log the user out
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch user data.');
-            }
-
-            const userData = await response.json();
+            if (!response.ok) throw new Error('Could not fetch user data.');
             
-            // 3. Populate the page with the fetched data
+            const userData = await response.json();
             populateUI(userData);
-
         } catch (error) {
-            console.error('Error initializing profile page:', error);
-            // Optionally show an error message to the user
-            alert('Could not load your profile. Please try logging in again.');
+            console.error(error);
+            alert('Your session has expired. Please log in again.');
             handleLogout();
         }
     }
 
-    /**
-     * Fills the HTML elements with user data.
-     * @param {object} userData - The user data object from the API.
-     */
     function populateUI(userData) {
         const firstName = userData.given_name || '';
         const lastName = userData.family_name || '';
-        const fullName = userData.name || `${firstName} ${lastName}`.trim();
+        const fullName = `${firstName} ${lastName}`.trim();
         const email = userData.email || '';
-        const initials = (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
+        const initials = (firstName[0] || '') + (lastName[0] || '');
 
         if (avatarInitialsEl) avatarInitialsEl.textContent = initials.toUpperCase() || 'U';
         if (profileNameEl) profileNameEl.textContent = fullName;
         if (profileEmailEl) profileEmailEl.textContent = email;
 
-        if (firstNameInput) firstNameInput.value = firstName;
-        if (lastNameInput) lastNameInput.value = lastName;
-        if (emailInput) emailInput.value = email;
+        if (document.getElementById('firstName')) document.getElementById('firstName').value = firstName;
+        if (document.getElementById('lastName')) document.getElementById('lastName').value = lastName;
+        if (document.getElementById('email')) document.getElementById('email').value = email;
     }
 
-    /**
-     * Sets up the click handlers for the sidebar navigation.
-     */
     function setupNavigation() {
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-
-                // Get the target section from the data-section attribute
                 const targetSectionId = link.getAttribute('data-section');
-                const targetSection = document.getElementById(targetSectionId);
-                const sectionTitle = link.textContent.trim();
-
-                // Update active state for links
-                navLinks.forEach(navLink => navLink.classList.remove('active'));
+                sections.forEach(s => s.classList.remove('active'));
+                document.getElementById(targetSectionId)?.classList.add('active');
+                navLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
-
-                // Show the target section and hide others
-                sections.forEach(section => section.classList.remove('active'));
-                if (targetSection) {
-                    targetSection.classList.add('active');
-                }
-                
-                // Update the main header title
-                if (sectionTitleEl) {
-                    sectionTitleEl.textContent = sectionTitle;
-                }
+                if (sectionTitleEl) sectionTitleEl.textContent = link.textContent.trim();
             });
         });
     }
 
-    /**
-     * Handles user logout.
-     */
     function handleLogout() {
-        sessionStorage.removeItem('accessToken');
-        sessionStorage.removeItem('idToken');
-        // We could also call a backend logout endpoint here
-        window.location.href = 'index.html'; // Redirect to home/login page
+        const accessToken = sessionStorage.getItem('accessToken');
+        fetch(API.logout, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+        .catch(err => console.error("Logout API call failed, but logging out on frontend anyway.", err))
+        .finally(() => {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        });
     }
 
+    // --- FORM SUBMISSION HANDLERS ---
+
+    if (profileForm) {
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const updateBtn = profileForm.querySelector('button[type="submit"]');
+            updateBtn.disabled = true;
+            updateBtn.textContent = 'Updating...';
+
+            const payload = {
+                given_name: document.getElementById('firstName').value,
+                family_name: document.getElementById('lastName').value
+            };
+
+            try {
+                const response = await fetch(API.updateUser, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                
+                showNotification('Profile updated successfully!', 'success');
+                // Reload to show updated name in header/sidebar if necessary
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (error) {
+                showNotification(error.message, 'error');
+                updateBtn.disabled = false;
+                updateBtn.textContent = 'Update Profile';
+            }
+        });
+    }
+
+    if (privacyForm) {
+        privacyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const changePassBtn = privacyForm.querySelector('button[type="submit"]');
+            changePassBtn.disabled = true;
+            changePassBtn.textContent = 'Changing...';
+            
+            const payload = {
+                previousPassword: document.getElementById('currentPassword').value,
+                proposedPassword: document.getElementById('newPassword').value
+            };
+
+            // Basic validation
+            if (payload.proposedPassword !== document.getElementById('confirmPassword').value) {
+                showNotification('New passwords do not match.', 'error');
+                changePassBtn.disabled = false;
+                changePassBtn.textContent = 'Change Password';
+                return;
+            }
+
+            try {
+                const response = await fetch(API.changePassword, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                showNotification('Password changed successfully. Please log in again.', 'success');
+                setTimeout(handleLogout, 2000);
+
+            } catch (error) {
+                showNotification(error.message, 'error');
+                changePassBtn.disabled = false;
+                changePassBtn.textContent = 'Change Password';
+            }
+        });
+    }
+    
     // --- INITIALIZATION ---
-    
-    // Set up navigation event listeners
     setupNavigation();
-    
-    // Attach logout functionality to the button
     if (logoutBtn) {
         logoutBtn.addEventListener('click', handleLogout);
     }
-    
-    // Check login state and load user data
     initializeProfilePage();
-
-}); 
+});
 </script>
 </body>
 </html>
