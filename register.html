@@ -605,154 +605,82 @@
             </div>
         </div>
     </div>
-    <script>
-    // Password visibility toggle
-    function togglePassword(id) {
-        const input = document.getElementById(id);
-        const eye = document.getElementById(id + '-eye');
-        if (input.type === "password") {
-            input.type = "text";
-            eye.classList.remove('fa-eye');
-            eye.classList.add('fa-eye-slash');
+   <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const registerForm = document.getElementById('register-form');
+    const alertContainer = document.getElementById('alert-container');
+    const registerBtn = document.getElementById('registerBtn');
+    const registerBtnText = document.getElementById('registerBtnText');
+    
+    
+    const REGISTER_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/register'; // <-- IMPORTANT: Replace this
+
+    function showAlert(message, type = 'error') {
+        alertContainer.innerHTML = `<div class="alert ${type}" style="padding: 15px; border-radius: 5px; margin-bottom: 20px; color: #fff; background-color: ${type === 'success' ? '#28a745' : '#dc3545'};">${message}</div>`;
+    }
+
+    function setButtonLoading(isLoading) {
+        if (isLoading) {
+            registerBtn.disabled = true;
+            registerBtnText.textContent = 'Creating Account...';
         } else {
-            input.type = "password";
-            eye.classList.remove('fa-eye-slash');
-            eye.classList.add('fa-eye');
+            registerBtn.disabled = false;
+            registerBtnText.textContent = 'Create Account';
         }
     }
 
-    // Password strength
-    const passwordInput = document.getElementById('password');
-    passwordInput.addEventListener('input', function() {
-        const val = passwordInput.value;
-        const lengthCheck = document.getElementById('length-check');
-        const upperCheck = document.getElementById('upper-check');
-        const numberCheck = document.getElementById('number-check');
-        const specialCheck = document.getElementById('special-check');
-
-        // Check length
-        if (val.length >= 8) {
-            lengthCheck.classList.add('valid');
-            lengthCheck.querySelector('i').classList.remove('fa-times');
-            lengthCheck.querySelector('i').classList.add('fa-check');
-        } else {
-            lengthCheck.classList.remove('valid');
-            lengthCheck.querySelector('i').classList.remove('fa-check');
-            lengthCheck.querySelector('i').classList.add('fa-times');
-        }
-
-        // Uppercase letter
-        if (/[A-Z]/.test(val)) {
-            upperCheck.classList.add('valid');
-            upperCheck.querySelector('i').classList.remove('fa-times');
-            upperCheck.querySelector('i').classList.add('fa-check');
-        } else {
-            upperCheck.classList.remove('valid');
-            upperCheck.querySelector('i').classList.remove('fa-check');
-            upperCheck.querySelector('i').classList.add('fa-times');
-        }
-
-        // Number
-        if (/\d/.test(val)) {
-            numberCheck.classList.add('valid');
-            numberCheck.querySelector('i').classList.remove('fa-times');
-            numberCheck.querySelector('i').classList.add('fa-check');
-        } else {
-            numberCheck.classList.remove('valid');
-            numberCheck.querySelector('i').classList.remove('fa-check');
-            numberCheck.querySelector('i').classList.add('fa-times');
-        }
-
-        // Special char
-        if (/[!@#$%^&*(),.?":{}|<>]/.test(val)) {
-            specialCheck.classList.add('valid');
-            specialCheck.querySelector('i').classList.remove('fa-times');
-            specialCheck.querySelector('i').classList.add('fa-check');
-        } else {
-            specialCheck.classList.remove('valid');
-            specialCheck.querySelector('i').classList.remove('fa-check');
-            specialCheck.querySelector('i').classList.add('fa-times');
-        }
-    });
-
-    // Registration handler using backend API
-    document.getElementById("registerForm").addEventListener("submit", async function(e){
+    registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        document.getElementById("alert-container").innerHTML = "";
-        const firstname = document.getElementById("firstname").value.trim();
-        const lastname = document.getElementById("lastname").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-        const confirmPassword = document.getElementById("confirm-password").value;
-        const termsChecked = document.getElementById("terms").checked;
-        const registerBtn = document.getElementById("registerBtn");
-        const registerBtnText = document.getElementById("registerBtnText");
-        registerBtn.disabled = true;
-        registerBtnText.innerHTML = '<span class="spinner"></span>';
+        showAlert(''); 
+        
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
 
-        // Basic validation
-        if (!firstname || !lastname || !email || !password || !confirmPassword) {
-            showAlert("Please fill in all fields.", "error");
-            registerBtn.disabled = false;
-            registerBtnText.textContent = "Create Account";
+        if (!firstName || !lastName || !email || !password) {
+            showAlert('Please fill out all fields.', 'error');
             return;
         }
-
         if (password !== confirmPassword) {
-            showAlert("Passwords do not match.", "error");
-            registerBtn.disabled = false;
-            registerBtnText.textContent = "Create Account";
+            showAlert('Passwords do not match.', 'error');
             return;
         }
 
-        if (!termsChecked) {
-            showAlert("You must agree to the Terms of Service and Privacy Policy.", "error");
-            registerBtn.disabled = false;
-            registerBtnText.textContent = "Create Account";
-            return;
-        }
+        setButtonLoading(true);
 
-        // Password rules: min 8 chars, uppercase, number, special char
-        if (
-            password.length < 8 ||
-            !/[A-Z]/.test(password) ||
-            !/\d/.test(password) ||
-            !/[!@#$%^&*(),.?":{}|<>]/.test(password)
-        ) {
-            showAlert("Password does not meet requirements.", "error");
-            registerBtn.disabled = false;
-            registerBtnText.textContent = "Create Account";
-            return;
-        }
-
-        // Send to backend
         try {
-            const response = await fetch("https://w1yg1wc8cf.execute-api.af-south-1.amazonaws.com/prod/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ firstname, lastname, email, password })
+            const response = await fetch(REGISTER_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    given_name: firstName,
+                    family_name: lastName,
+                    email: email,
+                    password: password
+                })
             });
+
             const data = await response.json();
-            if(response.ok) {
-                window.location.href = "confirm-registration.html?email=" + encodeURIComponent(email);
+
+            if (response.ok) {
+             
+                showAlert(data.message, 'success');
+            
+                registerBtn.style.display = 'none'; 
             } else {
-                showAlert(data.error || "Registration failed.", "error");
+            
+                showAlert(data.message || 'Registration failed.', 'error');
+                setButtonLoading(false);
             }
-        } catch (err) {
-            showAlert("Network error. Try again.", "error");
+        } catch (error) {
+            console.error('Registration failed:', error);
+            showAlert('An error occurred. Please try again.', 'error');
+            setButtonLoading(false);
         }
-        registerBtn.disabled = false;
-        registerBtnText.textContent = "Create Account";
     });
-
-    function showAlert(msg, type) {
-        document.getElementById("alert-container").innerHTML =
-            `<div class="alert ${type}"><i class="fas fa-exclamation-circle"></i> ${msg}</div>`;
-    }
-
-    // Placeholder for Terms/Privacy modal (implement as needed)
-    function showTermsModal() { alert("Show Terms of Service modal here."); }
-    function showPrivacyModal() { alert("Show Privacy Policy modal here."); }
-    </script>
+});
+</script>
 </body>
 </html>
