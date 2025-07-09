@@ -672,36 +672,9 @@
         </div>
     </div>
 <script>
+// --- GLOBAL FUNCTIONS FOR GOOGLE & ONCLICK ---
 
-async function handleGoogleCredentialResponse(response) {
-    const alertContainer = document.getElementById('alert-container');
-    alertContainer.innerHTML = `<div class="alert success" style="padding:15px; background: #28a745; color: white; border-radius: 5px;">Google sign-in successful! Please wait...</div>`;
-
-    const googleToken = response.credential;
-    const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google'; 
-  
-    try {
-        const backendResponse = await fetch(GOOGLE_AUTH_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: googleToken })
-        });
-        const data = await backendResponse.json();
-        if (backendResponse.ok) {
-            // Your backend should return your own tokens.
-            sessionStorage.setItem('accessToken', data.accessToken);
-            sessionStorage.setItem('idToken', data.idToken);
-            window.location.href = 'profile.html';
-        } else {
-            throw new Error(data.message || 'Backend authentication failed.');
-        }
-    } catch (error) {
-        alert(error.message || 'An error occurred during backend authentication.');
-    }
-}
-
-// This function is called by the Google script in the <head> once it's loaded.
-// This solves the "google is not defined" error.
+// This function will be called by Google's library once it is ready.
 function onGoogleScriptLoad() {
     const GOOGLE_CLIENT_ID = '982307721628-lp2riufu960o1u658o6hmbuk4b03vhak.apps.googleusercontent.com';
     try {
@@ -714,85 +687,104 @@ function onGoogleScriptLoad() {
             { theme: "outline", size: "large", shape: "pill" }
         );
     } catch (error) {
-        console.error("Google Sign-In initialization failed.", error);
+        console.error("Google Sign-In could not be initialized.", error);
     }
+}
+
+// This function handles the response from Google after a successful sign-in.
+async function handleGoogleCredentialResponse(response) {
+    const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google'; // You still need to create this backend
+    const alertContainer = document.getElementById('alert-container');
+    alertContainer.innerHTML = `<div class="alert success" style="padding:15px; background: #28a745; color: white; border-radius: 5px;">Google sign-in successful! Please wait...</div>`;
+    
+    // For now, this will show the frontend is working. The next step is building the backend.
+    console.log("Received Google credential:", response.credential);
+    alert("Google Login button works! Now we need to build the backend Lambda to process the token.");
 }
 
 // This function is called by the "Forgot Password" link's onclick attribute.
 function forgotPassword() {
-    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
-    if (forgotPasswordModal) forgotPasswordModal.classList.add('active');
-};
+    document.getElementById('forgotPasswordModal')?.classList.add('active');
+}
 
 
-// --- MAIN SCRIPT THAT RUNS AFTER PAGE IS LOADED ---
+// --- MAIN SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Configuration
     const api = {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
         forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password'
     };
     
-    // Element Selectors
     const loginForm = document.getElementById('loginForm');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginBtnText = document.getElementById('loginBtnText');
-    const alertContainer = document.getElementById('alert-container');
     const passwordToggle = document.getElementById('passwordToggle');
     const forgotPasswordModal = document.getElementById('forgotPasswordModal');
-    const resetEmailInput = document.getElementById('resetEmail');
     const cancelResetBtn = document.getElementById('cancelResetBtn');
     const submitResetBtn = document.getElementById('submitResetBtn');
-    const submitResetText = document.getElementById('submitResetText');
-    const registerLink = document.getElementById('register-link');
-    const backToHomeBtn = document.getElementById('backToHomeBtn');
 
-    // Helper Functions
-    function showAlert(message, type = 'error') {
-        if (message) {
-            alertContainer.innerHTML = `<div class="alert ${type}" style="padding: 15px; border-radius: 5px; color: white; background-color: ${type === 'success' ? '#28a745' : '#dc3545'};">${message}</div>`;
-        } else {
-            alertContainer.innerHTML = '';
-        }
-    }
-    
-    // All Event Listeners for your page elements
+    // Email/Password Login Form Submission
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            // ... your login logic here ...
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                const response = await fetch(api.login, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    sessionStorage.setItem('accessToken', data.accessToken);
+                    sessionStorage.setItem('idToken', data.idToken);
+                    window.location.href = 'profile.html';
+                } else {
+                    alert(data.message || 'An error occurred.');
+                }
+            } catch (error) {
+                alert('Could not connect to the server.');
+            }
         });
     }
 
+    // Password Visibility Toggle
     if (passwordToggle) {
         passwordToggle.addEventListener('click', () => {
+            const passwordInput = document.getElementById('password');
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
             passwordToggle.querySelector('i').className = `fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
         });
     }
     
+    // Forgot Password Modal "Cancel" Button
     if (cancelResetBtn) {
         cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active'));
     }
     
+    // Forgot Password Modal "Send Code" Button
     if (submitResetBtn) {
         submitResetBtn.addEventListener('click', async () => {
-            const email = resetEmailInput.value.trim();
+            const email = document.getElementById('resetEmail').value.trim();
             if (!email) return alert('Please enter your email address.');
-            //... logic to call forgotPassword endpoint and redirect ...
-            window.location.href = `reset-password.html?email=${encodeURIComponent(email)}`;
+            
+            try {
+                const response = await fetch(api.forgotPassword, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                if (response.ok) {
+                    window.location.href = `reset-password.html?email=${encodeURIComponent(email)}`;
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'An error occurred.');
+                }
+            } catch (error) {
+                alert('Could not connect to the server.');
+            }
         });
-    }
-    
-    if (registerLink) {
-        registerLink.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'register.html'; });
-    }
-    if (backToHomeBtn) {
-        backToHomeBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
     }
 });
 </script>
