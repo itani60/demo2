@@ -605,10 +605,11 @@
             </div>
         </div>
     </div>
+<!-- This is the ONLY script you need. Place it at the bottom of your <body> tag. -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- ELEMENT SELECTORS ---
-    const registerForm = document.getElementById('registerForm'); // <-- CORRECTED ID
+    const registerForm = document.getElementById('registerForm');
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirm-password');
     const alertContainer = document.getElementById('alert-container');
@@ -617,22 +618,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const termsCheckbox = document.getElementById('terms');
 
     // --- CONFIGURATION ---
-    const REGISTER_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/register'; // IMPORTANT: Replace this
+    // IMPORTANT: Replace this with the actual Invoke URL for your RegisterLambda
+    const REGISTER_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/register'; 
 
     // --- HELPER FUNCTIONS ---
-    function showAlert(message, type = 'error') { /* ... same as before ... */ }
-    function setButtonLoading(isLoading) { /* ... same as before ... */ }
-    function validatePassword() { /* ... same as before ... */ }
+    function showAlert(message, type = 'error') {
+        if (message) {
+            alertContainer.innerHTML = `<div class="alert ${type}">${message}</div>`;
+        } else {
+            alertContainer.innerHTML = '';
+        }
+    }
+
+    function setButtonLoading(isLoading) {
+        if (isLoading) {
+            registerBtn.disabled = true;
+            registerBtnText.textContent = 'Creating Account...';
+        } else {
+            registerBtn.disabled = false;
+            registerBtnText.textContent = 'Create Account';
+        }
+    }
+
+    function validatePassword() {
+        const pass = passwordInput.value;
+        const checks = {
+            length: pass.length >= 8,
+            upper: /[A-Z]/.test(pass),
+            number: /[0-9]/.test(pass),
+            special: /[!@#$%^&*(),.?":{}|<>]/.test(pass)
+        };
+
+        const updateCheck = (id, isValid) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.toggle('valid', isValid);
+                el.querySelector('i').className = `fas ${isValid ? 'fa-check' : 'fa-times'}`;
+            }
+        };
+
+        updateCheck('length-check', checks.length);
+        updateCheck('upper-check', checks.upper);
+        updateCheck('number-check', checks.number);
+        updateCheck('special-check', checks.special);
+        
+        return Object.values(checks).every(Boolean);
+    }
 
     // --- EVENT LISTENERS ---
     if (passwordInput) {
         passwordInput.addEventListener('input', validatePassword);
     }
 
-    if (registerForm) { // Added a check here to prevent the error
+    if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            showAlert(''); 
+            showAlert(''); // Clear previous alerts
             
             const firstName = document.getElementById('firstname').value.trim();
             const lastName = document.getElementById('lastname').value.trim();
@@ -641,14 +682,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const confirmPassword = confirmPasswordInput.value;
             const termsAgreed = termsCheckbox.checked;
 
+            // --- Client-side Validation ---
             if (!firstName || !lastName || !email || !password) {
                 return showAlert('Please fill out all fields.', 'error');
             }
-            if (!validatePassword()) {
-                return showAlert('Password does not meet the requirements.', 'error');
-            }
             if (password !== confirmPassword) {
                 return showAlert('Passwords do not match.', 'error');
+            }
+            if (!validatePassword()) {
+                return showAlert('Password does not meet the requirements.', 'error');
             }
             if (!termsAgreed) {
                 return showAlert('You must agree to the Terms of Service and Privacy Policy.', 'error');
@@ -671,21 +713,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (response.ok) {
-                    // On success, redirect to the confirmation page
+                    // On success, redirect to the confirmation page, passing the email
                     window.location.href = `confirm.html?email=${encodeURIComponent(email)}`;
                 } else {
                     showAlert(data.message || 'Registration failed.', 'error');
                     setButtonLoading(false);
                 }
             } catch (error) {
-                showAlert('An error occurred. Please try again.', 'error');
+                console.error('Registration Error:', error);
+                showAlert('Could not connect to the server. Please try again.', 'error');
                 setButtonLoading(false);
             }
         });
     }
 });
 
-function togglePassword(fieldId) { /* ... same as before ... */ }
+// --- GLOBAL HELPER FUNCTIONS FOR ONCLICK ATTRIBUTES ---
+
+function togglePassword(fieldId) {
+    const input = document.getElementById(fieldId);
+    const icon = document.getElementById(`${fieldId}-eye`);
+    if (input && icon) {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        icon.className = `fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
+    }
+}
+
+// Placeholder functions for your modals to prevent errors
+function showTermsModal() {
+    alert("Terms of Service modal would show here.");
+}
+
+function showPrivacyModal() {
+    alert("Privacy Policy modal would show here.");
+}
 </script>
 </body>
 </html>
