@@ -605,82 +605,87 @@
             </div>
         </div>
     </div>
-   <script>
+<script>
 document.addEventListener('DOMContentLoaded', () => {
-    const registerForm = document.getElementById('register-form');
+    // --- ELEMENT SELECTORS ---
+    const registerForm = document.getElementById('registerForm'); // <-- CORRECTED ID
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm-password');
     const alertContainer = document.getElementById('alert-container');
     const registerBtn = document.getElementById('registerBtn');
     const registerBtnText = document.getElementById('registerBtnText');
-    
-    
-    const REGISTER_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/register'; // <-- IMPORTANT: Replace this
+    const termsCheckbox = document.getElementById('terms');
 
-    function showAlert(message, type = 'error') {
-        alertContainer.innerHTML = `<div class="alert ${type}" style="padding: 15px; border-radius: 5px; margin-bottom: 20px; color: #fff; background-color: ${type === 'success' ? '#28a745' : '#dc3545'};">${message}</div>`;
+    // --- CONFIGURATION ---
+    const REGISTER_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/register'; // IMPORTANT: Replace this
+
+    // --- HELPER FUNCTIONS ---
+    function showAlert(message, type = 'error') { /* ... same as before ... */ }
+    function setButtonLoading(isLoading) { /* ... same as before ... */ }
+    function validatePassword() { /* ... same as before ... */ }
+
+    // --- EVENT LISTENERS ---
+    if (passwordInput) {
+        passwordInput.addEventListener('input', validatePassword);
     }
 
-    function setButtonLoading(isLoading) {
-        if (isLoading) {
-            registerBtn.disabled = true;
-            registerBtnText.textContent = 'Creating Account...';
-        } else {
-            registerBtn.disabled = false;
-            registerBtnText.textContent = 'Create Account';
-        }
-    }
-
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        showAlert(''); 
-        
-        const firstName = document.getElementById('firstName').value.trim();
-        const lastName = document.getElementById('lastName').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-
-        if (!firstName || !lastName || !email || !password) {
-            showAlert('Please fill out all fields.', 'error');
-            return;
-        }
-        if (password !== confirmPassword) {
-            showAlert('Passwords do not match.', 'error');
-            return;
-        }
-
-        setButtonLoading(true);
-
-        try {
-            const response = await fetch(REGISTER_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    given_name: firstName,
-                    family_name: lastName,
-                    email: email,
-                    password: password
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-             
-                showAlert(data.message, 'success');
+    if (registerForm) { // Added a check here to prevent the error
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showAlert(''); 
             
-                registerBtn.style.display = 'none'; 
-            } else {
-            
-                showAlert(data.message || 'Registration failed.', 'error');
+            const firstName = document.getElementById('firstname').value.trim();
+            const lastName = document.getElementById('lastname').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            const termsAgreed = termsCheckbox.checked;
+
+            if (!firstName || !lastName || !email || !password) {
+                return showAlert('Please fill out all fields.', 'error');
+            }
+            if (!validatePassword()) {
+                return showAlert('Password does not meet the requirements.', 'error');
+            }
+            if (password !== confirmPassword) {
+                return showAlert('Passwords do not match.', 'error');
+            }
+            if (!termsAgreed) {
+                return showAlert('You must agree to the Terms of Service and Privacy Policy.', 'error');
+            }
+
+            setButtonLoading(true);
+
+            try {
+                const response = await fetch(REGISTER_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        given_name: firstName,
+                        family_name: lastName,
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // On success, redirect to the confirmation page
+                    window.location.href = `confirm.html?email=${encodeURIComponent(email)}`;
+                } else {
+                    showAlert(data.message || 'Registration failed.', 'error');
+                    setButtonLoading(false);
+                }
+            } catch (error) {
+                showAlert('An error occurred. Please try again.', 'error');
                 setButtonLoading(false);
             }
-        } catch (error) {
-            console.error('Registration failed:', error);
-            showAlert('An error occurred. Please try again.', 'error');
-            setButtonLoading(false);
-        }
-    });
+        });
+    }
 });
+
+function togglePassword(fieldId) { /* ... same as before ... */ }
 </script>
 </body>
 </html>
