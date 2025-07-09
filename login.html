@@ -674,14 +674,14 @@
 
 <script>
 //
-// THIS IS THE FINAL, COMPLETE SCRIPT FOR YOUR LOGIN.HTML PAGE
+// THIS IS THE FINAL, COMPLETE, AND CORRECTED SCRIPT FOR YOUR LOGIN.HTML PAGE
 //
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
     const api = {
-        login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login', 
-        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password' 
+        login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
+        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password'
     };
     
     // --- ELEMENT SELECTORS ---
@@ -776,8 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cancelResetBtn) {
         cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active'));
     }
-
-    // --- THIS IS THE MISSING FUNCTION THAT HAS BEEN ADDED BACK ---
+    
     if (submitResetBtn) {
         submitResetBtn.addEventListener('click', async () => {
             const email = resetEmailInput.value;
@@ -794,21 +793,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: email })
                 });
-                const data = await response.json();
-                
-                // For forgot password, we always show a generic success message for security
-                showAlert(data.message, 'success');
-                forgotPasswordModal.classList.remove('active');
+
+                // This is the updated part
+                if (response.ok) {
+                    // On success, redirect to the reset password page.
+                    // We pass the email in the URL so the next page knows who to reset.
+                    window.location.href = `reset-password.html?email=${encodeURIComponent(email)}`;
+                } else {
+                    const data = await response.json();
+                    showAlert(data.message, 'error');
+                    setButtonLoading(submitResetBtn, submitResetText, false);
+                }
 
             } catch (error) {
                 showAlert('Could not connect to the server.', 'error');
-            } finally {
                 setButtonLoading(submitResetBtn, submitResetText, false);
             }
         });
     }
     
-
+    // 4. Navigation Links
     if (registerLink) {
         registerLink.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'register.html'; });
     }
