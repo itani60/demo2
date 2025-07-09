@@ -678,9 +678,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const api = {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
-        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password'
+        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password',
+        // We will need to create this backend endpoint later
+        googleAuth: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google' 
     };
-    // Your Google Client ID that you provided earlier
+    // IMPORTANT: Your Google Client ID goes here
     const GOOGLE_CLIENT_ID = '982307721628-lp2riufu960o1u658o6hmbuk4b03vhak.apps.googleusercontent.com';
     
     // --- ELEMENT SELECTORS ---
@@ -698,7 +700,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitResetText = document.getElementById('submitResetText');
     const registerLink = document.getElementById('register-link');
     const backToHomeBtn = document.getElementById('backToHomeBtn');
-    const googleBtnContainer = document.getElementById('google-signin-btn-container');
 
     // --- HELPER FUNCTIONS ---
     function showAlert(message, type = 'error') {
@@ -710,28 +711,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setButtonLoading(button, textElement, isLoading, loadingText = 'Processing...') {
-        // Your existing setButtonLoading function
-        // ...
+        if (textElement && !textElement.dataset.originalText) {
+            textElement.dataset.originalText = textElement.textContent;
+        }
+        if (isLoading) {
+            button.disabled = true;
+            if (textElement) textElement.textContent = loadingText;
+        } else {
+            button.disabled = false;
+            if (textElement) textElement.textContent = textElement.dataset.originalText;
+        }
     }
 
-    // --- EVENT LISTENERS FOR YOUR EXISTING FUNCTIONS ---
+    // --- EVENT LISTENERS ---
 
+    // 1. Email & Password Login Form
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            // ... your existing, working login logic ...
-            const response = await fetch(api.login, { /* ... */ });
-            const data = await response.json();
-            if (response.ok) {
-                sessionStorage.setItem('accessToken', data.accessToken);
-                sessionStorage.setItem('idToken', data.idToken);
-                window.location.href = 'profile.html';
-            } else {
-                showAlert(data.message || 'Login failed.');
+            showAlert('');
+            setButtonLoading(loginBtn, loginBtnText, true, 'Signing In...');
+            try {
+                const response = await fetch(api.login, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailInput.value, password: passwordInput.value })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    sessionStorage.setItem('accessToken', data.accessToken);
+                    sessionStorage.setItem('idToken', data.idToken);
+                    showAlert('Login successful! Redirecting...', 'success');
+                    setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
+                } else {
+                    showAlert(data.message || 'An unknown error occurred.');
+                    setButtonLoading(loginBtn, loginBtnText, false);
+                }
+            } catch (error) {
+                showAlert('Could not connect to the server.', 'error');
+                setButtonLoading(loginBtn, loginBtnText, false);
             }
         });
     }
 
+    // 2. Password Visibility Toggle
     if (passwordToggle) {
         passwordToggle.addEventListener('click', () => {
             const isPassword = passwordInput.type === 'password';
@@ -740,85 +763,93 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    window.forgotPassword = () => { 
-        if (forgotPasswordModal) forgotPasswordModal.classList.add('active');
-    };
-
-    if (cancelResetBtn) {
-        cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active'));
-    }
-    
+    // 3. Forgot Password Modal Logic
+    window.forgotPassword = () => { if (forgotPasswordModal) forgotPasswordModal.classList.add('active'); };
+    if (cancelResetBtn) { cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active')); }
     if (submitResetBtn) {
         submitResetBtn.addEventListener('click', async () => {
             const email = resetEmailInput.value.trim();
-            if (!email) return alert('Please enter your email address.');
-            
+            if (!email) { return alert('Please enter your email address.'); }
+            setButtonLoading(submitResetBtn, submitResetText, true, 'Sending...');
             try {
-                const response = await fetch(api.forgotPassword, { /* ... */ });
+                const response = await fetch(api.forgotPassword, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
                 if (response.ok) {
                     window.location.href = `reset-password.html?email=${encodeURIComponent(email)}`;
                 } else {
                     const data = await response.json();
                     showAlert(data.message || 'An error occurred.');
+                    setButtonLoading(submitResetBtn, submitResetText, false);
                 }
             } catch (error) {
-                showAlert('Could not connect to the server.');
+                showAlert('Could not connect to the server.', 'error');
+                setButtonLoading(submitResetBtn, submitResetText, false);
             }
         });
     }
     
-    if (registerLink) {
-        registerLink.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'register.html'; });
-    }
-    if (backToHomeBtn) {
-        backToHomeBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
-    }
+    // 4. Navigation Links
+    if (registerLink) { registerLink.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'register.html'; }); }
+    if (backToHomeBtn) { backToHomeBtn.addEventListener('click', () => { window.location.href = 'index.html'; }); }
 
-    // =======================================================
-    // --- GOOGLE SIGN-IN SCRIPT (THE UPDATE YOU ASKED FOR) ---
-    // =======================================================
+    // ===============================================
+    // --- GOOGLE SIGN-IN FUNCTIONALITY (THE UPDATE) ---
+    // ===============================================
     
     /**
-     * This is the function that is called automatically by Google
-     * when a user successfully signs in with their Google Account.
+     * This function is the callback that runs after a user signs in with Google.
      */
-    function handleGoogleCredentialResponse(response) {
-        showAlert('Google sign-in successful! Redirecting...', 'success');
-        
-        // The 'credential' field is a JWT token from Google containing the user's info.
+    async function handleGoogleCredentialResponse(response) {
         const googleToken = response.credential;
-        
-        // We will save this token as the 'idToken' for this session.
-        // This allows your other pages (like profile.html) to read it.
-        sessionStorage.setItem('idToken', googleToken);
+        showAlert('Google sign-in successful! Please wait...', 'success');
 
-        // We don't have an 'accessToken' from our own backend yet, so we can clear it.
-        sessionStorage.removeItem('accessToken');
-        
-        // Redirect to the profile page
-        setTimeout(() => {
-            window.location.href = 'profile.html';
-        }, 1500);
+        // This part is a placeholder for when we build the backend.
+        // For now, it will just show an alert and log the details.
+        console.log("Received Google Token:", googleToken);
+        const payload = JSON.parse(atob(googleToken.split('.')[1]));
+        console.log("Decoded Google Payload:", payload);
+        alert("Google button is working! The next step is to create the backend Lambda to process this login.");
+
+        // In a real implementation, you would do this:
+        /*
+        try {
+            const backendResponse = await fetch(api.googleAuth, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: googleToken })
+            });
+            const data = await backendResponse.json();
+            if (backendResponse.ok) {
+                sessionStorage.setItem('accessToken', data.accessToken);
+                sessionStorage.setItem('idToken', data.idToken);
+                window.location.href = 'profile.html';
+            } else {
+                showAlert(data.message || 'Backend authentication failed.');
+            }
+        } catch (error) {
+            showAlert('Could not authenticate with server.');
+        }
+        */
     }
 
     /**
-     * This section initializes the Google library and renders the button.
+     * This code initializes the Google library and renders the button on page load.
      */
     try {
         google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleCredentialResponse // The function to call on success
+            callback: handleGoogleCredentialResponse
         });
-
-        // This renders the Google button inside the div from your HTML
         google.accounts.id.renderButton(
             document.getElementById("google-signin-btn-container"),
-            { theme: "outline", size: "large", type: "standard", shape: "pill", width: "250" } 
+            { theme: "outline", size: "large", type: "standard", shape: "pill" } 
         );
-        
     } catch (error) {
-        console.error("Google Sign-In could not be initialized.", error);
-        showAlert("Could not load Google Sign-In. Please try refreshing the page.", "error");
+        console.error("Google Sign-In failed to initialize.", error);
+        showAlert("Could not load Google Sign-In.", "error");
     }
 
 });
