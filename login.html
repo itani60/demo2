@@ -673,14 +673,16 @@
     </div>
 
 <script>
-// Replace the entire <script> block at the bottom of your login.html with this.
-
+//
+// THIS IS THE CORRECT, COMPLETE SCRIPT FOR YOUR LOGIN.HTML PAGE
+//
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
     const api = {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
-        forgotPassword: 'https://YOUR_API_ID.execute-api.af-south-1.amazonaws.com/prod/forgot-password'
+        // Make sure to create and add your forgotPassword API endpoint URL here
+        forgotPassword: 'YOUR_FORGOT_PASSWORD_API_ENDPOINT' 
     };
     
     // --- ELEMENT SELECTORS ---
@@ -701,16 +703,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- HELPER FUNCTIONS ---
     function showAlert(message, type = 'error') {
-        alertContainer.innerHTML = `
-            <div class="alert ${type}" role="alert">
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
-                <span>${message}</span>
-            </div>
-        `;
+        if (message) {
+            alertContainer.innerHTML = `
+                <div class="alert ${type}" role="alert">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+        } else {
+            alertContainer.innerHTML = '';
+        }
     }
 
     function setButtonLoading(button, textElement, isLoading) {
-        textElement.dataset.originalText = textElement.textContent;
+        if (!textElement.dataset.originalText) {
+            textElement.dataset.originalText = textElement.textContent;
+        }
         if (isLoading) {
             button.disabled = true;
             textElement.textContent = 'Processing...';
@@ -772,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
         passwordToggle.addEventListener('click', () => {
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
-            passwordToggle.innerHTML = `<i class="fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>`;
+            passwordToggle.querySelector('i').className = `fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
         });
     }
     
@@ -785,12 +793,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active'));
     }
 
-    if (submitResetBtn) {
-        submitResetBtn.addEventListener('click', async () => {
-            // ... (forgot password logic remains the same)
-        });
-    }
-    
     // 4. Navigation
     if(registerLink) {
         registerLink.addEventListener('click', (event) => {
