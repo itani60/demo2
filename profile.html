@@ -1055,540 +1055,143 @@
     </footer>
    <script src="wishlistmodal.js"></script> 
 <script>
+   document.addEventListener('DOMContentLoaded', () => {
 
+    // --- CONFIGURATION ---
+    const USER_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user'; // e.g., https://.../user
 
-// Basic UI functions
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('sidebarOverlay').classList.toggle('active');
-}
-
-function closeSidebar() {
-    document.getElementById('sidebar').classList.remove('active');
-    document.getElementById('sidebarOverlay').classList.remove('active');
-}
-
-function toggleSubmenu(element) {
-    const submenu = element.nextElementSibling;
-    submenu.classList.toggle('active');
-}
-
-function goBack(element) {
-    const submenu = element.parentElement;
-    submenu.classList.remove('active');
-}
-
-function acceptCookies() {
-    document.querySelector('.cookie-notice').style.display = 'none';
-    // Set cookie acceptance in localStorage
-    localStorage.setItem('cookiesAccepted', 'true');
-}
-
-function performSearch(event) {
-    event.preventDefault();
-    // This would normally search the site, but for demo purposes we'll just show a notification
-    showNotification('Search functionality is a demo', 'success', 'Search');
-}
-
-function subscribeNewsletter(event) {
-    event.preventDefault();
-    // This would normally subscribe to newsletter, but for demo purposes we'll just show a notification
-    showNotification('Newsletter subscription is a demo', 'success', 'Newsletter');
-}
-
-document.addEventListener('DOMContentLoaded', async function() {
-    // Wishlist Modal Functionality
-    function showWishlistModal() {
-        const modal = document.getElementById('wishlist-modal');
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Prevent scrolling behind modal
-        // Use setTimeout to ensure the display change takes effect before adding the visible class
-        setTimeout(() => {
-            modal.classList.add('visible');
-        }, 10);
-    }
-
-    function hideWishlistModal() {
-        const modal = document.getElementById('wishlist-modal');
-        modal.classList.remove('visible');
-        // Wait for the transition to complete before hiding the modal
-        setTimeout(() => {
-            modal.style.display = 'none';
-            document.body.style.overflow = ''; // Restore scrolling
-        }, 300);
-    }
-
-    // Set up wishlist modal event listeners
-    document.getElementById('wishlist-link').addEventListener('click', function(e) {
-        e.preventDefault();
-        showWishlistModal();
-    });
-    
-    document.querySelector('.wishlist-close-modal').addEventListener('click', hideWishlistModal);
-    
-    // Close modal when clicking outside of it (on the overlay)
-    document.getElementById('wishlist-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            hideWishlistModal();
-        }
-    });
-    
-    // Make "View All" button in modal work
-    document.querySelector('.view-all-btn.nav-link').addEventListener('click', function(e) {
-        e.preventDefault();
-        hideWishlistModal();
-        // Trigger click on the wishlist nav link in the profile sidebar
-        document.querySelector('.profile-nav .nav-link[data-section="wishlist"]').click();
-    });
-    // ---------- NOTIFICATION SYSTEM ----------
-    function showNotification(message, type = 'success', title = '') {
-        const notificationContainer = document.getElementById('notificationContainer');
-        
-        // Create notification elements
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        
-        const content = document.createElement('div');
-        content.className = 'notification-content';
-        
-        const icon = document.createElement('div');
-        icon.className = 'notification-icon';
-        icon.innerHTML = type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
-        
-        const messageEl = document.createElement('div');
-        messageEl.className = 'notification-message';
-        
-        if (title) {
-            const titleEl = document.createElement('div');
-            titleEl.className = 'notification-title';
-            titleEl.textContent = title;
-            messageEl.appendChild(titleEl);
-        }
-        
-        const messageText = document.createElement('div');
-        messageText.textContent = message;
-        messageEl.appendChild(messageText);
-        
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'notification-close';
-        closeBtn.innerHTML = '&times;';
-        closeBtn.addEventListener('click', () => {
-            notification.style.animation = 'fade-out 0.3s forwards';
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
-        });
-        
-        content.appendChild(icon);
-        content.appendChild(messageEl);
-        content.appendChild(closeBtn);
-        
-        const progress = document.createElement('div');
-        progress.className = 'notification-progress';
-        
-        const progressBar = document.createElement('div');
-        progressBar.className = 'notification-progress-bar';
-        
-        progress.appendChild(progressBar);
-        
-        notification.appendChild(content);
-        notification.appendChild(progress);
-        
-        notificationContainer.appendChild(notification);
-        
-        // Auto-remove after animation completes
-        setTimeout(() => {
-            notification.style.animation = 'fade-out 0.3s forwards';
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
-        }, 3000);
-        
-        return notification;
-    }
-    
-    // ---------- USER INFO HELPERS (Handles Cognito and Google users) ----------
-    function getAttribute(userInfo, attrName) {
-        const attrs = userInfo.Attributes || userInfo.UserAttributes || [];
-        if (Array.isArray(attrs)) {
-            const found = attrs.find(attr => attr.Name === attrName);
-            if (found) return found.Value;
-        }
-        // Google user: direct property
-        if (userInfo[attrName]) return userInfo[attrName];
-        // Support your custom Google shape
-        if (attrName === 'picture' && userInfo.avatar) return userInfo.avatar;
-        if (attrName === 'picture' && userInfo.picture) return userInfo.picture;
-        return '';
-    }
-
-    function getDisplayName(userInfo) {
-        if (userInfo.name) return userInfo.name;
-        if (userInfo.displayName) return userInfo.displayName;
-        let firstName = getAttribute(userInfo, 'given_name');
-        let lastName = getAttribute(userInfo, 'family_name');
-        let name = getAttribute(userInfo, 'name');
-        let email = getAttribute(userInfo, 'email');
-        if (firstName) return firstName + (lastName ? ' ' + lastName : '');
-        if (name) return name;
-        if (email) return email.split('@')[0].replace(/[.\-_]/g, ' ').replace(/(^|\s)\S/g, l => l.toUpperCase());
-        return userInfo.userId || userInfo.Username || '';
-    }
-
-    function getAvatarInitials(userInfo) {
-        if (userInfo.avatar || userInfo.picture) return ""; // Show avatar photo if available
-        const displayName = getDisplayName(userInfo);
-        if (displayName) {
-            const parts = displayName.split(' ');
-            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-            return displayName[0].toUpperCase();
-        }
-        return 'U';
-    }
-
-    // Only require userInfo, not authToken, for session
-    async function loadAndRenderProfile() {
-        let userInfo = null;
-        try {
-            userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        } catch (e) { userInfo = null; }
-
-        // If not logged in, redirect
-        if (!userInfo) {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userInfo');
-            window.location.href = "login.html";
-            return;
-        }
-
-        // Render profile
-        const displayName = getDisplayName(userInfo);
-        const email = getAttribute(userInfo, 'email');
-        const firstName = getAttribute(userInfo, 'given_name');
-        const lastName = getAttribute(userInfo, 'family_name');
-        const avatarInitials = getAvatarInitials(userInfo);
-        const avatarPic = getAttribute(userInfo, 'picture');
-
-        // Avatar rendering (image if available, initials otherwise)
-        const avatarDiv = document.getElementById('avatarInitials');
-        avatarDiv.innerHTML = `
-            ${avatarPic ? `<img src="${avatarPic}" alt="Avatar" class="avatar-img"/>` : avatarInitials}
-            <button class="avatar-upload" title="Upload new avatar">
-                <i class="fas fa-camera"></i>
-            </button>
-        `;
-
-        document.getElementById('profileName').textContent = displayName;
-        document.getElementById('profileEmail').textContent = email || '';
-
-        // If Google user, don't allow editing name/email fields (they have no update endpoint)
-        const googleUser = userInfo.provider === 'Google' || userInfo.sub || userInfo.userId;
-        document.getElementById('firstName').value = firstName || (googleUser ? displayName.split(' ')[0] : '');
-        document.getElementById('lastName').value = lastName || (googleUser ? (displayName.split(' ')[1] || '') : '');
-        document.getElementById('email').value = email || '';
-
-        document.getElementById('firstName').readOnly = !!googleUser;
-        document.getElementById('lastName').readOnly = !!googleUser;
-        document.getElementById('email').readOnly = true;
-
-        // Hide password section for Google users
-        if (googleUser) {
-            document.getElementById('privacy-form').style.display = "none";
-        } else {
-            document.getElementById('privacy-form').style.display = "";
-        }
-    }
-
-    // Dummy API Calls for updating profile (Cognito only)
-    async function updateProfileName(firstName, lastName) {
-        // Only update if not Google user
-        let userInfo = null;
-        try {
-            userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        } catch (e) {}
-        const googleUser = userInfo && (userInfo.provider === 'Google' || userInfo.sub || userInfo.userId);
-        if (googleUser) {
-            showNotification("Google users cannot update their name via this form.", "error", "Update Failed");
-            return false;
-        }
-
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-            showNotification("Session expired. Please log in again.", "error", "Authentication Error");
-            window.location.href = "login.html";
-            return false;
-        }
-        // Validate: At least one name field must be non-empty
-        if (!firstName && !lastName) {
-            showNotification('Please enter at least a first or last name to update your profile.', 'error', 'Validation Error');
-            return false;
-        }
-        // Build payload with only non-empty fields
-        const payload = {};
-        if (firstName) payload.given_name = firstName;
-        if (lastName) payload.family_name = lastName;
-        payload.name = [firstName, lastName].filter(Boolean).join(' ').trim();
-
-        try {
-            const resp = await fetch("https://w1yg1wc8cf.execute-api.af-south-1.amazonaws.com/prod/update-profile", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${authToken}`
-                },
-                body: JSON.stringify(payload)
-            });
-            let data = {};
-            try { data = await resp.json(); } catch (e) {}
-            if (!resp.ok) {
-                throw new Error(data.error || "Failed to update profile name");
-            }
-            // Update local userInfo
-            // You may want to re-fetch userInfo here from the server
-            return true;
-        } catch (err) {
-            showNotification(err.message, 'error', 'API Error');
-            return false;
-        }
-    }
-
-    async function updatePassword(oldPassword, newPassword) {
-        const authToken = localStorage.getItem('authToken');
-        try {
-            const resp = await fetch("https://w1yg1wc8cf.execute-api.af-south-1.amazonaws.com/prod/change-password", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${authToken}`
-                },
-                body: JSON.stringify({
-                    oldPassword,
-                    newPassword
-                })
-            });
-            const data = await resp.json();
-            if (!resp.ok) {
-                throw new Error(data.error || "Failed to change password");
-            }
-            return true;
-        } catch (err) {
-            showNotification(err.message, 'error', 'Password Update Error');
-            return false;
-        }
-    }
-
-    await loadAndRenderProfile();
-
-    // Section navigation
-    document.querySelectorAll('.profile-nav .nav-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.querySelectorAll('.profile-nav .nav-link').forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
-            const section = this.getAttribute('data-section');
-            document.querySelectorAll('.profile-section').forEach(sec => sec.classList.remove('active'));
-            document.getElementById(section).classList.add('active');
-            document.getElementById('section-title').textContent = this.textContent.trim();
-        });
-    });
-
-    // Logout (from privacy section)
+    // --- ELEMENT SELECTORS ---
+    const avatarInitialsEl = document.getElementById('avatarInitials');
+    const profileNameEl = document.getElementById('profileName');
+    const profileEmailEl = document.getElementById('profileEmail');
+    const firstNameInput = document.getElementById('firstName');
+    const lastNameInput = document.getElementById('lastName');
+    const emailInput = document.getElementById('email');
+    const sectionTitleEl = document.getElementById('section-title');
+    const navLinks = document.querySelectorAll('.profile-nav .nav-link');
+    const sections = document.querySelectorAll('.profile-section');
     const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userInfo');
-            window.location.href = "login.html";
-        });
-    }
 
-    // --- Update name
-    document.getElementById('profile-form').addEventListener('submit', async function(e){
-        e.preventDefault();
-        const firstName = document.getElementById('firstName').value.trim();
-        const lastName = document.getElementById('lastName').value.trim();
-        const result = await updateProfileName(firstName, lastName);
-        if(result) {
-            await loadAndRenderProfile();
-            showNotification('Profile updated!', 'success', 'Success');
+    /**
+     * This is the main function that runs when the page loads.
+     * It checks for a login session and fetches user data.
+     */
+    async function initializeProfilePage() {
+        const accessToken = sessionStorage.getItem('accessToken');
+
+        // 1. Protect the page: If no token, redirect to login
+        if (!accessToken) {
+            window.location.href = 'login.html';
+            return; // Stop further execution
         }
-    });
 
-    // --- Update password
-    document.getElementById('privacy-form').addEventListener('submit', async function(e){
-        e.preventDefault();
-        const oldPassword = document.getElementById('currentPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        if(newPassword !== confirmPassword) {
-            showNotification("Passwords do not match!", "error", "Validation Error");
-            return;
-        }
-        const result = await updatePassword(oldPassword, newPassword);
-        if(result) {
-            showNotification('Password changed!', 'success', 'Success');
-            // Optionally, clear form fields here:
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-        }
-    });
+        // 2. Fetch user data from our secure endpoint
+        try {
+            const response = await fetch(USER_API_URL, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
 
-    // Dummy handler for settings form
-    document.getElementById('settings-form').addEventListener('submit', function(e){
-        e.preventDefault();
-        showNotification('Settings saved! (Demo)', 'success', 'Settings Updated');
-    });
-});
-</script>
+            if (response.status === 401 || response.status === 403) {
+                // Token is invalid or expired
+                handleLogout(); // Log the user out
+                return;
+            }
 
-<!-- Include the search suggestions functionality -->
-<script src="search-suggestions.js"></script>
+            if (!response.ok) {
+                throw new Error('Failed to fetch user data.');
+            }
 
-<!-- Mobile Search Modal Script -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Mobile search modal functionality
-    const searchInput = document.getElementById('searchInput');
-    const searchButton = document.querySelector('.search-button');
-    const mobileSearchModal = document.getElementById('mobileSearchModal');
-    const mobileSearchClose = document.getElementById('mobileSearchClose');
-    const mobileSearchInput = document.getElementById('mobileSearchInput');
-    const mobileSearchForm = document.getElementById('mobileSearchForm');
-    const mobileSearchQuery = document.getElementById('mobileSearchQuery');
-    const mobileSuggestionsGrid = document.getElementById('mobileSuggestionsGrid');
-    
-    // Function to check if device is a mobile phone (not tablet)
-    function isMobilePhone() {
-        return window.innerWidth <= 768 &&
-              (typeof window.orientation !== 'undefined' ||
-               navigator.userAgent.indexOf('IEMobile') !== -1 ||
-               /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    }
-    
-    // Function to open mobile search modal
-    function openMobileSearchModal() {
-        if (isMobilePhone()) {
-            mobileSearchModal.classList.add('active');
-            mobileSearchInput.focus();
-            // Copy value from main search input if it exists
-            if (searchInput && searchInput.value) {
-                mobileSearchInput.value = searchInput.value;
-                // Trigger input event to show suggestions
-                const inputEvent = new Event('input', { bubbles: true });
-                mobileSearchInput.dispatchEvent(inputEvent);
-            }
-        }
-    }
-    
-    // Function to close mobile search modal
-    function closeMobileSearchModal() {
-        mobileSearchModal.classList.remove('active');
-    }
-    
-    // Event listeners for opening modal
-    if (searchInput) {
-        searchInput.addEventListener('click', function(e) {
-            if (isMobilePhone()) {
-                e.preventDefault();
-                e.stopPropagation();
-                openMobileSearchModal();
-            }
-        }, { capture: true });
-    }
-    
-    if (searchButton) {
-        searchButton.addEventListener('click', function(e) {
-            if (isMobilePhone()) {
-                e.preventDefault();
-                e.stopPropagation();
-                openMobileSearchModal();
-            }
-        }, { capture: true });
-    }
-    
-    // Event listener for closing modal
-    if (mobileSearchClose) {
-        mobileSearchClose.addEventListener('click', closeMobileSearchModal);
-    }
-    
-    // Handle mobile search form submission
-    if (mobileSearchForm) {
-        mobileSearchForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const query = mobileSearchInput.value.trim();
-            if (query) {
-                window.location.href = `search-results.html?q=${encodeURIComponent(query)}`;
-            }
-        });
-    }
-    
-    // Mobile search suggestions functionality
-    if (mobileSearchInput) {
-        const API_URL = 'https://xf9zlapr5e.execute-api.af-south-1.amazonaws.com/search';
-        let debounceTimer;
-        
-        mobileSearchInput.addEventListener('input', function() {
-            const query = this.value.trim();
-            mobileSearchQuery.textContent = query || 'results';
+            const userData = await response.json();
             
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(async function() {
-                if (query.length < 2) {
-                    mobileSuggestionsGrid.innerHTML = '';
-                    return;
+            // 3. Populate the page with the fetched data
+            populateUI(userData);
+
+        } catch (error) {
+            console.error('Error initializing profile page:', error);
+            // Optionally show an error message to the user
+            alert('Could not load your profile. Please try logging in again.');
+            handleLogout();
+        }
+    }
+
+    /**
+     * Fills the HTML elements with user data.
+     * @param {object} userData - The user data object from the API.
+     */
+    function populateUI(userData) {
+        const firstName = userData.given_name || '';
+        const lastName = userData.family_name || '';
+        const fullName = userData.name || `${firstName} ${lastName}`.trim();
+        const email = userData.email || '';
+        const initials = (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
+
+        if (avatarInitialsEl) avatarInitialsEl.textContent = initials.toUpperCase() || 'U';
+        if (profileNameEl) profileNameEl.textContent = fullName;
+        if (profileEmailEl) profileEmailEl.textContent = email;
+
+        if (firstNameInput) firstNameInput.value = firstName;
+        if (lastNameInput) lastNameInput.value = lastName;
+        if (emailInput) emailInput.value = email;
+    }
+
+    /**
+     * Sets up the click handlers for the sidebar navigation.
+     */
+    function setupNavigation() {
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Get the target section from the data-section attribute
+                const targetSectionId = link.getAttribute('data-section');
+                const targetSection = document.getElementById(targetSectionId);
+                const sectionTitle = link.textContent.trim();
+
+                // Update active state for links
+                navLinks.forEach(navLink => navLink.classList.remove('active'));
+                link.classList.add('active');
+
+                // Show the target section and hide others
+                sections.forEach(section => section.classList.remove('active'));
+                if (targetSection) {
+                    targetSection.classList.add('active');
                 }
                 
-                try {
-                    const response = await fetch(`${API_URL}?q=${encodeURIComponent(query)}&limit=10`);
-                    if (!response.ok) throw new Error('API request failed');
-                    
-                    const data = await response.json();
-                    const suggestions = data.results || [];
-                    
-                    mobileSuggestionsGrid.innerHTML = '';
-                    
-                    if (suggestions.length === 0) {
-                        mobileSuggestionsGrid.innerHTML = '<div class="mobile-no-suggestions">No suggestions found</div>';
-                        return;
-                    }
-                    
-                    suggestions.forEach(item => {
-                        const isCategory = item.type === 'category';
-                        const suggestionElement = document.createElement('div');
-                        suggestionElement.className = `mobile-suggestion-item ${isCategory ? 'category' : 'product'}`;
-                        
-                        if (!isCategory) {
-                            const productName = item.name || item.model || item.title || '';
-                            suggestionElement.innerHTML = `
-                                <a href="search-results.html?q=${encodeURIComponent(productName)}" class="mobile-suggestion-link">
-                                    <div class="mobile-suggestion-img">
-                                        <img src="${item.imageUrl || item.image || 'images/phones/Apple iPhone 16.webp'}" alt="${productName}">
-                                    </div>
-                                    <div class="mobile-suggestion-name">${productName}</div>
-                                </a>
-                            `;
-                        } else {
-                            suggestionElement.innerHTML = `
-                                <a href="${(item.category || item.name).toLowerCase()}.html" class="mobile-suggestion-link">
-                                    <div class="mobile-suggestion-icon">
-                                        <i class="fas fa-folder"></i>
-                                    </div>
-                                    <div class="mobile-suggestion-name">${item.name || ''}</div>
-                                </a>
-                            `;
-                        }
-                        
-                        mobileSuggestionsGrid.appendChild(suggestionElement);
-                    });
-                } catch (error) {
-                    console.error('Error fetching suggestions:', error);
-                    mobileSuggestionsGrid.innerHTML = '<div class="mobile-no-suggestions">Error loading suggestions</div>';
+                // Update the main header title
+                if (sectionTitleEl) {
+                    sectionTitleEl.textContent = sectionTitle;
                 }
-            }, 300); // Debounce delay
+            });
         });
     }
-});
+
+    /**
+     * Handles user logout.
+     */
+    function handleLogout() {
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('idToken');
+        // We could also call a backend logout endpoint here
+        window.location.href = 'index.html'; // Redirect to home/login page
+    }
+
+    // --- INITIALIZATION ---
+    
+    // Set up navigation event listeners
+    setupNavigation();
+    
+    // Attach logout functionality to the button
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+    
+    // Check login state and load user data
+    initializeProfilePage();
+
+}); 
 </script>
 </body>
 </html>
