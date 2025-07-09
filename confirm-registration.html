@@ -257,8 +257,140 @@
             Check your spam folder if you don't see the email. The code expires in 10 minutes.
         </div>
     </div>
-    <script>
-  
-    </script>
+ 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- ELEMENT SELECTORS ---
+    const verificationForm = document.getElementById('verification-form');
+    const emailInput = document.getElementById('email');
+    const codeInput = document.getElementById('confirmationCode');
+    const verifyButton = document.getElementById('verify-button');
+    const buttonText = document.getElementById('button-text');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const successMessageEl = document.getElementById('success-message');
+    const errorMessageEl = document.getElementById('error-message');
+    const resendLink = document.getElementById('resend-code');
+    const countdownEl = document.getElementById('countdown');
+
+    // --- CONFIGURATION ---
+    const CONFIRM_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/confirm'; // e.g., https://.../confirm
+    const RESEND_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/resend-code'; // e.g., https://.../resend-code
+
+    // --- INITIALIZATION ---
+    // Get email from the URL and pre-fill the input field
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+    if (emailFromUrl) {
+        emailInput.value = decodeURIComponent(emailFromUrl);
+    }
+    
+    // --- HELPER FUNCTIONS ---
+    function showMessage(element, message) {
+        element.textContent = message;
+        element.style.display = 'block';
+    }
+
+    function hideMessages() {
+        successMessageEl.style.display = 'none';
+        errorMessageEl.style.display = 'none';
+    }
+
+    function setButtonLoading(isLoading) {
+        if (isLoading) {
+            verifyButton.disabled = true;
+            buttonText.textContent = 'Verifying...';
+            loadingSpinner.style.display = 'inline-block';
+        } else {
+            verifyButton.disabled = false;
+            buttonText.textContent = 'Verify Account';
+            loadingSpinner.style.display = 'none';
+        }
+    }
+
+    // --- EVENT LISTENERS ---
+
+    // Handle the verification form submission
+    verificationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMessages();
+        setButtonLoading(true);
+
+        const email = emailInput.value;
+        const code = codeInput.value;
+
+        try {
+            const response = await fetch(CONFIRM_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code })
+            });
+            
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage(successMessageEl, data.message);
+                verificationForm.style.display = 'none'; // Hide form on success
+                resendLink.style.display = 'none'; // Hide resend link
+                setTimeout(() => {
+                    window.location.href = 'login.html'; // Redirect to login page
+                }, 3000);
+            } else {
+                showMessage(errorMessageEl, data.message || "An error occurred.");
+                setButtonLoading(false);
+            }
+        } catch (error) {
+            showMessage(errorMessageEl, 'Could not connect to the server.');
+            setButtonLoading(false);
+        }
+    });
+
+    // Handle the "Resend Code" link
+    resendLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        hideMessages();
+
+        const email = emailInput.value;
+        if (!email) {
+            showMessage(errorMessageEl, 'Please enter your email address to resend the code.');
+            return;
+        }
+
+        try {
+            const response = await fetch(RESEND_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage(successMessageEl, data.message);
+                startResendCooldown();
+            } else {
+                showMessage(errorMessageEl, data.message || 'Could not resend code.');
+            }
+        } catch (error) {
+            showMessage(errorMessageEl, 'Could not connect to the server.');
+        }
+    });
+
+    function startResendCooldown() {
+        let seconds = 60;
+        resendLink.style.display = 'none';
+        countdownEl.style.display = 'block';
+
+        const timer = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = `You can send another code in ${seconds}s`;
+            if (seconds <= 0) {
+                clearInterval(timer);
+                countdownEl.style.display = 'none';
+                resendLink.style.display = 'inline-flex';
+            }
+        }, 1000);
+    }
+});
+</script>
 </body>
 </html>
