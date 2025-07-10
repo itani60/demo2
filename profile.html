@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* All of your existing CSS is preserved */
+        /* Your Complete CSS */
         .avatar-image img {
             width: 100%;
             height: 100%;
@@ -687,6 +687,18 @@
             </div>
            <div class="menu-content">
                 <ul class="menu-items">
+                    <li class="item">
+                        <div class="submenu-item" onclick="toggleSubmenu(this)">
+                            <span><i class=""></i> Cellphones & Tablets</span>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </div>
+                        <ul class="menu-items submenu">
+                            <div class="menu-title" onclick="goBack(this)"><i class="fa-solid fa-chevron-left"></i> Cellphones & Tablets</div>
+                            <li class="item"><a href="#smartphones">Smartphones</a></li>
+                            <li class="item"><a href="#tablets">Tablets</a></li>
+                            <li class="item"><a href="#phone-accessories">Accessories</a></li>
+                        </ul>
+                    </li>
                     </ul>
             </div>
             <div class="sidebar-footer">
@@ -752,9 +764,20 @@
                                 </div>
                             </form>
                         </div>
-                        <div id="wishlist" class="profile-section"></div>
-                        <div id="notifications" class="profile-section"></div>
-                        <div id="settings" class="profile-section"></div>
+                        <div id="wishlist" class="profile-section">
+                            <div class="wishlist-search-wrapper">
+                                </div>
+                            <div class="wishlist-grid" id="wishlistGrid"></div>
+                            <div id="empty-wishlist" class="empty-wishlist" style="display: none;">
+                                </div>
+                        </div>
+                        <div id="notifications" class="profile-section">
+                            <div id="notificationsList"></div>
+                        </div>
+                        <div id="settings" class="profile-section">
+                            <form id="settings-form">
+                                </form>
+                        </div>
                         <div id="privacy" class="profile-section">
                             <form id="privacy-form">
                                 <div class="form-group">
@@ -775,60 +798,60 @@
     
     <div class="notification-container" id="notificationContainer"></div>
     
-    <div id="wishlist-modal" class="modal"></div>
+    <div id="wishlist-modal" class="modal">
+        </div>
     
-    <div id="confirmation-dialog" class="modal"></div>
+    <div id="confirmation-dialog" class="modal">
+        </div>
 
-    <div class="mobile-search-modal" id="mobileSearchModal"></div>
+    <div class="mobile-search-modal" id="mobileSearchModal">
+        </div>
 
-    <footer class="footer"></footer>
-
+    <footer class="footer">
+        </footer>
+    
 <script src="wishlistmodal.js"></script> 
 <script>
+// This is the complete and corrected script for your profile page.
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
+    // This points to the Lambda that verifies your custom JWT and gets user data from DynamoDB
     const API = {
-        // Use the correct endpoint for your Cognito user fetcher Lambda
-        getUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user', 
-        // These are placeholders for when you build these features
-        updateUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user',
-        changePassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/change-password',
+        getProfile: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/profile',
+        updateProfile: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/profile', 
+        changePassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/change-password', 
         logout: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/logout'
     };
 
-    // --- ELEMENT SELECTORS ---
-    const avatarContainerEl = document.getElementById('avatarContainer');
+    // --- ELEMENT SELECTORS (from your original code) ---
+    const avatarContainerEl = document.getElementById('avatarContainer'); // Using a wrapper for picture/initials
     const profileNameEl = document.getElementById('profileName');
     const profileEmailEl = document.getElementById('profileEmail');
     const sectionTitleEl = document.getElementById('section-title');
     const navLinks = document.querySelectorAll('.profile-nav .nav-link');
     const sections = document.querySelectorAll('.profile-section');
     
-    // Forms & Buttons
     const profileForm = document.getElementById('profile-form');
     const privacyForm = document.getElementById('privacy-form');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    // --- HELPER FUNCTIONS ---
+    // --- HELPER FUNCTIONS (from your original code) ---
     function showNotification(message, type = 'success') {
         const container = document.getElementById('notificationContainer');
-        if (!container) return;
+        if (!container) { 
+            alert(`${type.toUpperCase()}: ${message}`); // Fallback to alert
+            return;
+        }
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
-        // Basic notification for now, can be styled later
-        notification.innerHTML = `<span>${message}</span>`;
+        notification.textContent = message;
         container.appendChild(notification);
-        setTimeout(() => {
-            notification.style.animation = 'fade-out 0.5s forwards';
-            setTimeout(() => notification.remove(), 500);
-        }, 3000);
+        setTimeout(() => notification.remove(), 3000);
     }
 
     // --- CORE FUNCTIONS ---
-
     async function initializeProfilePage() {
-        // Using sessionStorage as requested
         const accessToken = sessionStorage.getItem('accessToken');
         if (!accessToken) {
             window.location.href = 'login.html';
@@ -836,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(API.getUser, {
+            const response = await fetch(API.getProfile, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
 
@@ -855,7 +878,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateUI(userData) {
-        // This function now maps Cognito attributes to your UI elements
         const firstName = userData.given_name || '';
         const lastName = userData.family_name || '';
         const fullName = userData.name || `${firstName} ${lastName}`.trim();
@@ -865,8 +887,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (picture) {
             avatarContainerEl.innerHTML = `<img src="${picture}" alt="Profile Picture">`;
-        } else if(initials) {
-            avatarContainerEl.innerHTML = `<span id="avatarInitials">${initials.toUpperCase()}</span>`;
+        } else if (initials) {
+            // Your original element was avatarInitials, let's target that if it exists
+            const avatarInitialsEl = document.getElementById('avatarInitials');
+            if (avatarInitialsEl) avatarInitialsEl.textContent = initials.toUpperCase();
         }
 
         if (profileNameEl) profileNameEl.textContent = fullName;
@@ -875,10 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Populate the form fields
         if (document.getElementById('firstName')) document.getElementById('firstName').value = firstName;
         if (document.getElementById('lastName')) document.getElementById('lastName').value = lastName;
-        if (document.getElementById('email')) {
-            document.getElementById('email').value = email;
-            document.getElementById('email').readOnly = true; // Email should not be changed
-        }
+        if (document.getElementById('email')) document.getElementById('email').value = email;
     }
 
     function setupNavigation() {
@@ -901,18 +922,21 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'index.html';
     }
 
-    // --- FORM SUBMISSION HANDLERS ---
-
+    // --- FORM SUBMISSION HANDLERS (from your original code) ---
     if (profileForm) {
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            // This would call your updateUser Lambda
-            showNotification('Update functionality not yet implemented.', 'info');
+            // This logic will call your (future) updateUser Lambda
+            showNotification('Update functionality not implemented yet.', 'info');
         });
     }
 
     if (privacyForm) {
-        // This would call your changePassword Lambda
+        privacyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // This logic will call your (future) changePassword Lambda
+            showNotification('Change Password functionality not implemented yet.', 'info');
+        });
     }
     
     // --- INITIALIZATION ---
