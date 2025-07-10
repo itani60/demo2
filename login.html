@@ -682,6 +682,19 @@ function onGoogleScriptLoad() {
     const GOOGLE_CLIENT_ID = '982307721628-vjauenec4eb7nnu892vqac2ohqp4chrs.apps.googleusercontent.com';
     try {
         console.log("Attempting to initialize Google Sign-In");
+        if (typeof google === 'undefined') {
+            console.error("Google object is undefined");
+            return;
+        }
+        if (typeof google.accounts === 'undefined') {
+            console.error("google.accounts is undefined");
+            return;
+        }
+        if (typeof google.accounts.id === 'undefined') {
+            console.error("google.accounts.id is undefined");
+            return;
+        }
+        
         google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
             callback: handleGoogleCredentialResponse
@@ -692,10 +705,11 @@ function onGoogleScriptLoad() {
             console.error("Button container not found");
             return;
         }
+        console.log("Button container found:", buttonContainer);
         
         google.accounts.id.renderButton(
             buttonContainer,
-            { theme: "outline", size: "large", shape: "pill", width: "398" }
+            { theme: "outline", size: "large", shape: "pill", width: "398" } // Render a custom-width button
         );
         console.log("Button render function called");
     } catch (error) {
@@ -707,39 +721,30 @@ function onGoogleScriptLoad() {
 async function handleGoogleCredentialResponse(response) {
     const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google';
     const alertContainer = document.getElementById('alert-container');
-    alertContainer.innerHTML = `<div class="alert success" role="alert">Authenticating with server...</div>`;
-
+    alertContainer.innerHTML = `<div class="alert success" style="padding:15px; background: #28a745; color: white; border-radius: 5px;">Google sign-in successful! Please wait...</div>`;
+    
     try {
-        // CORRECTED: Send the token to your backend with the key 'token'
-        const res = await fetch(GOOGLE_AUTH_API_URL, {
+        console.log("Sending Google credential to backend...");
+        const result = await fetch(GOOGLE_AUTH_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                token: response.credential 
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: response.credential })
         });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            // Success! The backend verified the token.
-            alertContainer.innerHTML = `<div class="alert success" role="alert">Login Successful! ${data.message}</div>`;
-            console.log("Backend response:", data);
-            
-            // To enable redirecting, your backend must return session tokens.
-            // For now, we confirm success.
-            alert("Success! User has been authenticated by the backend.");
-
+        
+        const data = await result.json();
+        console.log("Backend response:", data);
+        
+        if (result.ok) {
+            // Store tokens similar to regular login
+            sessionStorage.setItem('accessToken', data.accessToken);
+            sessionStorage.setItem('idToken', data.idToken);
+            window.location.href = 'profile.html';
         } else {
-            // The backend returned an error
-            throw new Error(data.message || 'An unknown error occurred.');
+            alertContainer.innerHTML = `<div class="alert error">Authentication failed: ${data.message}</div>`;
         }
-
     } catch (error) {
-        console.error('Authentication Error:', error);
-        alertContainer.innerHTML = `<div class="alert error" role="alert">Authentication Failed: ${error.message}</div>`;
+        console.error("Google authentication error:", error);
+        alertContainer.innerHTML = `<div class="alert error">Connection error. Please try again later.</div>`;
     }
 }
 
@@ -752,6 +757,22 @@ function forgotPassword() {
 // --- MAIN SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOMContentLoaded event fired");
+    
+    // Check if Google script loaded after a delay
+    setTimeout(() => {
+        console.log("Checking Google script status after 2 seconds");
+        console.log("Google script loaded:", window.googleScriptLoaded);
+        
+        if (!window.googleScriptLoaded) {
+            console.error("Google script did not load properly");
+            // Try to manually load the script again
+            const script = document.createElement('script');
+            script.src = "https://accounts.google.com/gsi/client";
+            script.onload = onGoogleScriptLoad;
+            document.head.appendChild(script);
+            console.log("Attempted to reload Google script");
+        }
+    }, 2000);
 
     const api = {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
@@ -778,8 +799,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    // This part is for your standard email/password login
-                    // You need to decide what your /login endpoint returns
                     sessionStorage.setItem('accessToken', data.accessToken);
                     sessionStorage.setItem('idToken', data.idToken);
                     window.location.href = 'profile.html';
