@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Add Content Security Policy to mitigate iframe sandbox risks -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com https://apis.google.com 'unsafe-inline'; frame-src https://accounts.google.com; connect-src https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com; img-src 'self' https://comparehub-smartphone-images.s3.af-south-1.amazonaws.com https://*.googleusercontent.com data:; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
     <title>Login | CompareHub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +15,51 @@
         window.googleScriptLoaded = false;
         console.log("Page loading - Google script not yet loaded");
     </script>
-    <script src="https://accounts.google.com/gsi/client?onload=onGoogleScriptLoad" async defer></script>
+    <!-- Load Google Sign-In API with better error handling -->
+    <script>
+        // First define a function to load the Google script
+        function loadGoogleScript() {
+                    const script = document.createElement('script');
+                    script.src = "https://accounts.google.com/gsi/client";
+                    script.async = true;
+                    script.onload = onGoogleScriptLoad;
+                    
+                    // Track load attempts
+                    window.googleScriptLoadAttempts = (window.googleScriptLoadAttempts || 0) + 1;
+                    
+                    script.onerror = () => {
+                        console.error("Failed to load Google script");
+                        
+                        // Show fallback after multiple failed attempts
+                        if (window.googleScriptLoadAttempts >= 2) {
+                            console.log("Multiple load attempts failed, showing fallback");
+                            const fallbackBtn = document.getElementById('google-signin-fallback');
+                            const originalBtn = document.getElementById('google-signin-btn-container');
+                            
+                            if (fallbackBtn && originalBtn) {
+                                fallbackBtn.style.display = 'block';
+                                originalBtn.style.display = 'none';
+                            }
+                            
+                            // Show error message
+                            const alertContainer = document.getElementById('alert-container');
+                            if (alertContainer) {
+                                alertContainer.innerHTML = `<div class="alert warning">Google Sign-In could not be loaded. You can still sign in with email and password.</div>`;
+                            }
+                        } else {
+                            // Try again after a short delay, with increasing timeout
+                            const delay = 2000 * window.googleScriptLoadAttempts;
+                            console.log(`Will retry loading Google script in ${delay/1000} seconds`);
+                            setTimeout(loadGoogleScript, delay);
+                        }
+                    };
+                    
+                    document.head.appendChild(script);
+                }
+                
+                // Call it after a short delay to ensure DOM is ready
+                setTimeout(loadGoogleScript, 500);
+    </script>
   <style>
         :root {
             --primary-color: #f80101;
@@ -32,6 +78,10 @@
             --shadow-medium: 0 5px 25px rgba(0, 0, 0, 0.15);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --google-blue: #4285F4;
+            --google-red: #EA4335;
+            --google-yellow: #FBBC05;
+            --google-green: #34A853;
         }
 
         @keyframes slideUp {
@@ -607,6 +657,15 @@
             <div id="alert-container" aria-live="polite"></div>
             
             <div id="google-signin-btn-container" style="margin-bottom: 28px; display: flex; justify-content: center;"></div>
+            
+            <!-- Fallback button in case Google Sign-In fails to load -->
+            <div id="google-signin-fallback" style="display: none; margin-bottom: 28px; text-align: center;">
+                <button type="button" class="google-login-btn" onclick="window.location.reload()">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxwYXRoIGQ9Ik05IDE4YzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNNCAxMC43YTUuNCA1LjQgMCAwIDEgMC0zLjRWNUgxYTkgOSAwIDAgMCAwIDhsMy0yLjN6IiBmaWxsPSIjRkJCQzA1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNOSAzLjZjMS4zIDAgMi41LjQgMy40IDEuM0wxNSAyLjNBOSA5IDAgMCAwIDEgNWwzIDIuNGE1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PHBhdGggZD0iTTAgMGgxOHYxOEgweiIvPjwvZz48L3N2Zz4=" alt="Google logo" class="google-logo">
+                    <span>Sign in with Google</span>
+                </button>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 8px;">Google Sign-In not loading? Click to retry.</p>
+            </div>
 
             <div class="social-login-divider">
                 <span>or continue with email</span>
@@ -680,40 +739,67 @@ function onGoogleScriptLoad() {
     window.googleScriptLoaded = true;
     
     const GOOGLE_CLIENT_ID = '982307721628-vjauenec4eb7nnu892vqac2ohqp4chrs.apps.googleusercontent.com';
+    const alertContainer = document.getElementById('alert-container');
+    
     try {
         console.log("Attempting to initialize Google Sign-In");
+        
+        // Check if Google object exists
         if (typeof google === 'undefined') {
-            console.error("Google object is undefined");
-            return;
+            throw new Error("Google object is undefined");
         }
         if (typeof google.accounts === 'undefined') {
-            console.error("google.accounts is undefined");
-            return;
+            throw new Error("google.accounts is undefined");
         }
         if (typeof google.accounts.id === 'undefined') {
-            console.error("google.accounts.id is undefined");
-            return;
+            throw new Error("google.accounts.id is undefined");
         }
         
+        // Initialize Google Sign-In
         google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleCredentialResponse
+            callback: handleGoogleCredentialResponse,
+            // Add error callback
+            error_callback: (error) => {
+                console.error("Google Sign-In error:", error);
+                if (alertContainer) {
+                    alertContainer.innerHTML = `<div class="alert error">Google Sign-In error. Please try again later.</div>`;
+                }
+            }
         });
         
+        // Find and validate button container
         const buttonContainer = document.getElementById("google-signin-btn-container");
         if (!buttonContainer) {
-            console.error("Button container not found");
-            return;
+            throw new Error("Button container not found");
         }
         console.log("Button container found:", buttonContainer);
         
+        // Render the button
         google.accounts.id.renderButton(
             buttonContainer,
-            { theme: "outline", size: "large", shape: "pill", width: "398" } // Render a custom-width button
+            {
+                theme: "outline",
+                size: "large",
+                shape: "pill",
+                width: "398",
+                text: "signin_with" // Explicitly set to "Sign in with Google"
+            }
         );
         console.log("Button render function called");
     } catch (error) {
-        console.error("Google Sign-In could not be initialized.", error);
+        console.error("Google Sign-In could not be initialized:", error);
+        
+        // Show user-friendly error message
+        if (alertContainer) {
+            alertContainer.innerHTML = `<div class="alert error">Unable to initialize Google Sign-In. Please try again later or use email login.</div>`;
+        }
+        
+        // Try to reload the script after a delay if it's a critical error
+        if (typeof google === 'undefined') {
+            console.log("Will attempt to reload Google script in 3 seconds");
+            setTimeout(loadGoogleScript, 3000);
+        }
     }
 }
 
@@ -758,21 +844,8 @@ function forgotPassword() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOMContentLoaded event fired");
     
-    // Check if Google script loaded after a delay
-    setTimeout(() => {
-        console.log("Checking Google script status after 2 seconds");
-        console.log("Google script loaded:", window.googleScriptLoaded);
-        
-        if (!window.googleScriptLoaded) {
-            console.error("Google script did not load properly");
-            // Try to manually load the script again
-            const script = document.createElement('script');
-            script.src = "https://accounts.google.com/gsi/client";
-            script.onload = onGoogleScriptLoad;
-            document.head.appendChild(script);
-            console.log("Attempted to reload Google script");
-        }
-    }, 2000);
+    // No need to check for Google script loading here anymore
+    // as we're handling it with the loadGoogleScript function
 
     const api = {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
