@@ -254,7 +254,7 @@
         }
 
         .google-logo { width: 24px; height: 24px; }
-
+        
         .login-btn { 
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); 
             color: white; 
@@ -339,7 +339,7 @@
             color: var(--secondary-hover); 
             text-decoration: underline; 
         }
-
+        
         .register-link { 
             text-align: center; 
             margin-top: 24px; 
@@ -402,7 +402,7 @@
             color: var(--primary-color);
             text-decoration: underline;
         }
-
+        
         .alert {
             padding: 16px 20px; 
             margin-bottom: 24px; 
@@ -580,7 +580,7 @@
             .login-form-container {
                 padding: 24px;
             }
-
+            
             .form-header h2 {
                 font-size: 1.6rem;
             }
@@ -683,9 +683,8 @@ document.addEventListener('DOMContentLoaded', () => {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
         // Make sure to create and add your forgotPassword API endpoint URL here
         forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password' 
-        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password'
     };
-
+    
     // --- ELEMENT SELECTORS ---
     const loginForm = document.getElementById('loginForm');
     const emailInput = document.getElementById('email');
@@ -711,7 +710,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>${message}</span>
                 </div>
             `;
-            alertContainer.innerHTML = `<div class="alert ${type}" role="alert"><span>${message}</span></div>`;
         } else {
             alertContainer.innerHTML = '';
         }
@@ -719,18 +717,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setButtonLoading(button, textElement, isLoading) {
         if (!textElement.dataset.originalText) {
-    function setButtonLoading(button, textElement, isLoading, loadingText = 'Processing...') {
-        if (textElement && !textElement.dataset.originalText) {
             textElement.dataset.originalText = textElement.textContent;
         }
         if (isLoading) {
             button.disabled = true;
             textElement.textContent = 'Processing...';
-            if (textElement) textElement.textContent = loadingText;
         } else {
             button.disabled = false;
             textElement.textContent = textElement.dataset.originalText;
-            if (textElement) textElement.textContent = textElement.dataset.originalText;
         }
     }
 
@@ -742,8 +736,6 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             showAlert(''); // Clear previous alerts
             setButtonLoading(loginBtn, loginBtnText, true);
-            showAlert('');
-            setButtonLoading(loginBtn, loginBtnText, true, 'Signing In...');
 
             try {
                 const response = await fetch(api.login, {
@@ -754,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         password: passwordInput.value
                     })
                 });
-
+                
                 const data = await response.json();
 
                 if (response.ok) {
@@ -771,7 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.href = 'profile.html';
                     }, 1000);
                     
-                    setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
                 } else {
                     showAlert(data.message || 'An unknown error occurred.');
                     setButtonLoading(loginBtn, loginBtnText, false);
@@ -779,7 +770,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Login request failed:', error);
                 showAlert('Could not connect to the server. Please check your connection.');
-                showAlert('Could not connect to the server.', 'error');
                 setButtonLoading(loginBtn, loginBtnText, false);
             }
         });
@@ -793,25 +783,15 @@ document.addEventListener('DOMContentLoaded', () => {
             passwordToggle.querySelector('i').className = `fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
         });
     }
-
+    
     // 3. Forgot Password Modal Logic
     window.forgotPassword = () => { 
         if(forgotPasswordModal) forgotPasswordModal.classList.add('active');
-        if (forgotPasswordModal) forgotPasswordModal.classList.add('active');
     };
 
     if (cancelResetBtn) {
         cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active'));
     }
-    
-    // THIS IS THE CORRECTED "SEND CODE" BUTTON LOGIC
-    if (submitResetBtn) {
-        submitResetBtn.addEventListener('click', async () => {
-            const email = resetEmailInput.value.trim();
-            if (!email) {
-                alert('Please enter your email address.');
-                return;
-            }
 
     // 4. Navigation
     if(registerLink) {
@@ -820,54 +800,21 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'register.html';
         });
     }
-            setButtonLoading(submitResetBtn, submitResetText, true, 'Sending...');
-
-            try {
-                const response = await fetch(api.forgotPassword, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
-                });
 
     if(backToHomeBtn) {
         backToHomeBtn.addEventListener('click', () => {
             window.location.href = 'index.html';
-                if (response.ok) {
-                    // **THE FIX:** Redirect to the reset password page, passing the email.
-                    window.location.href = `reset-password.html?email=${encodeURIComponent(email)}`;
-                } else {
-                    const data = await response.json();
-                    showAlert(data.message || 'An error occurred.');
-                    setButtonLoading(submitResetBtn, submitResetText, false);
-                }
-            } catch (error) {
-                showAlert('Could not connect to the server.', 'error');
-                setButtonLoading(submitResetBtn, submitResetText, false);
-            }
         });
     }
-
+    
     // 5. Google Sign-In placeholder
     document.getElementById('google-login-btn')?.addEventListener('click', () => {
         showAlert('Google Sign-In is not yet configured.', 'warning');
     });
 
-    // 4. Navigation Links
-    if (registerLink) {
-        registerLink.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'register.html'; });
-    }
-    if (backToHomeBtn) {
-        backToHomeBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
-    }
-    
-    // 5. Google Sign-In placeholder (as in your original script)
-    const googleBtn = document.getElementById('google-login-btn');
-    if (googleBtn) {
-        googleBtn.addEventListener('click', () => {
-            showAlert('Google Sign-In is not yet configured.', 'warning');
-        });
-    }
 });
 </script>
 </body>
 </html>
+
+
