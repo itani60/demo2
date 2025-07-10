@@ -8,13 +8,15 @@
     <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* All of your existing CSS is preserved */
         .avatar-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
         }
-         .mobile-search-modal {
+        /* Mobile Search Modal */
+        .mobile-search-modal {
             display: none;
             position: fixed;
             top: 0;
@@ -639,24 +641,79 @@
             }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/6.3.3/aws-cognito-sdk.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.24.min.js"></script>
 </head>
 <body>
-    <header class="header"></header>
+    <header class="header">
+        <div class="header-top">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+            <div class="logo">
+                <a href="index.html" class="logo-link">
+                    <img src="https://comparehub-smartphone-images.s3.af-south-1.amazonaws.com/IMG_20250625_174144.jpg" alt="CompareHubPrices" class="logo-image">
+                </a>
+            </div>
+            <div class="search-container">
+                <form id="search-form">
+                    <input type="text" name="q" class="search-input" placeholder="What are you shopping for?" id="searchInput" aria-label="Search products">
+                    <button type="submit" class="search-button" aria-label="Search"><i class="fas fa-search"></i></button>
+                </form>
+                <div class="search-suggestions" id="searchSuggestions">
+                    <div class="suggestions-header">
+                        <span class="all-results">All</span>
+                        <span class="search-query" id="searchQuery">results</span>
+                    </div>
+                    <div class="suggestions-grid" id="suggestionsGrid"></div>
+                </div>
+            </div>
+        </div>
+        <nav class="category-nav">
+            <a href="best-deals.html" class="active"><i class=""></i> Best deals</a>
+            <a href="#new-arrivals"><i class=""></i> New Arrivals</a>
+            <a href="#wishlist" id="wishlist-link"><i class="fas fa-heart"></i> Wishlist</a>
+        </nav>
+    </header>
+
     <div class="main-container">
-        <nav class="sidebar" id="sidebar"></nav>
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-login" id="sidebarLogin"></div>
+            <div class="sidebar-search">
+                <input type="text" placeholder="Search categories..." id="sidebarSearchInput">
+            </div>
+            <div class="sidebar-header">
+                <h3>Browse Categories</h3>
+                <button class="close-sidebar" onclick="closeSidebar()">&times;</button>
+            </div>
+           <div class="menu-content">
+                <ul class="menu-items">
+                    </ul>
+            </div>
+            <div class="sidebar-footer">
+                <div class="cookie-notice">
+                    <p>This website uses cookies to provide you with the best experience.</p>
+                    <button class="accept-cookies" onclick="acceptCookies()">Accept</button>
+                </div>
+            </div>
+        </nav>
+        
         <main class="content">
             <div class="profile-container">
                 <div class="profile-sidebar">
                     <div class="profile-avatar">
                         <div class="avatar-image" id="avatarContainer">
-                            <span id="avatarInitials">U</span>
+                            <span id="avatarInitials">JD</span>
                         </div>
                         <div class="profile-name" id="profileName"></div>
                         <div class="profile-email" id="profileEmail"></div>
                     </div>
                     <ul class="profile-nav">
                         <li><a href="#" class="nav-link active" data-section="profile-info"><i class="fas fa-user"></i> Profile Information</a></li>
-                        </ul>
+                        <li><a href="#" class="nav-link" data-section="wishlist"><i class="fas fa-heart"></i> My Wishlist</a></li>
+                        <li><a href="#" class="nav-link" data-section="notifications"><i class="fas fa-bell"></i> Notifications</a></li>
+                        <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Settings</a></li>
+                        <li><a href="#" class="nav-link" data-section="privacy"><i class="fas fa-shield-alt"></i> Privacy & Security</a></li>
+                    </ul>
                 </div>
                 <div class="profile-main">
                     <div class="profile-header">
@@ -664,138 +721,205 @@
                     </div>
                     <div class="profile-content">
                         <div id="profile-info" class="profile-section active">
-                           <form id="profile-form">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value" id="wishlistCount">0</div>
+                                    <div class="stat-label">Wishlist Items</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="alertsCount">0</div>
+                                    <div class="stat-label">Price Alerts</div>
+                                </div>
+                            </div>
+                            <form id="profile-form">
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="firstName">First Name</label>
-                                        <input type="text" id="firstName" name="firstName">
+                                        <input type="text" id="firstName" name="firstName" value="">
                                     </div>
                                     <div class="form-group">
                                         <label for="lastName">Last Name</label>
-                                        <input type="text" id="lastName" name="lastName">
+                                        <input type="text" id="lastName" name="lastName" value="">
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="email">Email Address</label>
-                                    <input type="email" id="email" name="email" readonly>
+                                    <input type="email" id="email" name="email" value="">
                                 </div>
-                                </form>
+                                <div class="form-group">
+                                    <button type="submit" class="btn">Update Profile</button>
+                                    <button type="button" class="btn btn-secondary">Cancel</button>
+                                </div>
+                            </form>
                         </div>
+                        <div id="wishlist" class="profile-section"></div>
+                        <div id="notifications" class="profile-section"></div>
+                        <div id="settings" class="profile-section"></div>
                         <div id="privacy" class="profile-section">
-                           <form id="privacy-form">
-                               <div class="form-group">
-                                   <button type="button" class="btn btn-logout" id="logoutBtn">
-                                       <i class="fas fa-sign-out-alt"></i> Logout
-                                   </button>
-                               </div>
-                           </form>
+                            <form id="privacy-form">
+                                <div class="form-group">
+                                    <button type="button" class="btn btn-logout" id="logoutBtn">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </button>
+                                    <button type="button" class="btn" style="background: #dc3545;">Delete Account</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-    <script>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    
+    <div class="notification-container" id="notificationContainer"></div>
+    
+    <div id="wishlist-modal" class="modal"></div>
+    
+    <div id="confirmation-dialog" class="modal"></div>
+
+    <div class="mobile-search-modal" id="mobileSearchModal"></div>
+
+    <footer class="footer"></footer>
+
+<script src="wishlistmodal.js"></script> 
+<script>
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
-    // UPDATE THIS to your new API Gateway endpoint that triggers your Cognito Lambda
-    const GET_USER_API_ENDPOINT = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user'; // Example endpoint name
+    const API = {
+        // Use the correct endpoint for your Cognito user fetcher Lambda
+        getUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user', 
+        // These are placeholders for when you build these features
+        updateUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user',
+        changePassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/change-password',
+        logout: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/logout'
+    };
 
     // --- ELEMENT SELECTORS ---
     const avatarContainerEl = document.getElementById('avatarContainer');
     const profileNameEl = document.getElementById('profileName');
     const profileEmailEl = document.getElementById('profileEmail');
+    const sectionTitleEl = document.getElementById('section-title');
+    const navLinks = document.querySelectorAll('.profile-nav .nav-link');
+    const sections = document.querySelectorAll('.profile-section');
+    
+    // Forms & Buttons
+    const profileForm = document.getElementById('profile-form');
+    const privacyForm = document.getElementById('privacy-form');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    // --- MAIN FUNCTION ---
+    // --- HELPER FUNCTIONS ---
+    function showNotification(message, type = 'success') {
+        const container = document.getElementById('notificationContainer');
+        if (!container) return;
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        // Basic notification for now, can be styled later
+        notification.innerHTML = `<span>${message}</span>`;
+        container.appendChild(notification);
+        setTimeout(() => {
+            notification.style.animation = 'fade-out 0.5s forwards';
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
+    }
+
+    // --- CORE FUNCTIONS ---
+
     async function initializeProfilePage() {
-        // We will use sessionStorage as you previously requested.
-        // This MUST now contain the Access Token from Cognito.
+        // Using sessionStorage as requested
         const accessToken = sessionStorage.getItem('accessToken');
-        
         if (!accessToken) {
-            // If no token, the user is not logged in. Redirect them.
             window.location.href = 'login.html';
             return;
         }
 
         try {
-            // Call your new Lambda function
-            const response = await fetch(GET_USER_API_ENDPOINT, {
-                headers: {
-                    // Send the Cognito Access Token for authorization
-                    'Authorization': `Bearer ${accessToken}`
-                }
+            const response = await fetch(API.getUser, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
             });
-            
+
             if (!response.ok) {
-                // This will catch 4xx and 5xx errors from the Lambda
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch user profile.');
+                throw new Error(errorData.message || 'Could not fetch user data.');
             }
             
             const userData = await response.json();
             populateUI(userData);
-
         } catch (error) {
-            console.error("Profile Initialization Error:", error);
-            alert(error.message + " Redirecting to login.");
-            handleLogout(); // If anything goes wrong, log the user out for security.
+            console.error("Profile page error:", error);
+            showNotification('Your session may have expired. Please log in again.', 'error');
+            setTimeout(handleLogout, 2000);
         }
     }
 
-    // --- UI POPULATION ---
     function populateUI(userData) {
-        // **UPDATED:** This function now uses the attribute names returned by your Cognito Lambda.
-        const fullName = userData.name || '';
+        // This function now maps Cognito attributes to your UI elements
         const firstName = userData.given_name || '';
         const lastName = userData.family_name || '';
+        const fullName = userData.name || `${firstName} ${lastName}`.trim();
         const email = userData.email || '';
         const picture = userData.picture || '';
+        const initials = (firstName[0] || '') + (lastName[0] || '');
 
-        // Display the full name and email in the sidebar
+        if (picture) {
+            avatarContainerEl.innerHTML = `<img src="${picture}" alt="Profile Picture">`;
+        } else if(initials) {
+            avatarContainerEl.innerHTML = `<span id="avatarInitials">${initials.toUpperCase()}</span>`;
+        }
+
         if (profileNameEl) profileNameEl.textContent = fullName;
         if (profileEmailEl) profileEmailEl.textContent = email;
 
-        // Display profile picture or initials
-        if (picture) {
-            avatarContainerEl.innerHTML = `<img src="${picture}" alt="Profile Picture">`;
-        } else {
-            const initials = (firstName[0] || '') + (lastName[0] || '');
-            const avatarInitialsEl = document.getElementById('avatarInitials');
-            if (avatarInitialsEl) avatarInitialsEl.textContent = initials.toUpperCase() || 'U';
-        }
-
-        // Populate the form fields for editing
-        const firstNameInput = document.getElementById('firstName');
-        const lastNameInput = document.getElementById('lastName');
-        const emailInput = document.getElementById('email');
-
-        if (firstNameInput) firstNameInput.value = firstName;
-        if (lastNameInput) lastNameInput.value = lastName;
-        if (emailInput) {
-            emailInput.value = email;
-            // It's good practice to make the email read-only as it's the primary identifier
-            emailInput.readOnly = true; 
+        // Populate the form fields
+        if (document.getElementById('firstName')) document.getElementById('firstName').value = firstName;
+        if (document.getElementById('lastName')) document.getElementById('lastName').value = lastName;
+        if (document.getElementById('email')) {
+            document.getElementById('email').value = email;
+            document.getElementById('email').readOnly = true; // Email should not be changed
         }
     }
 
-    // --- EVENT HANDLERS ---
+    function setupNavigation() {
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetSectionId = link.getAttribute('data-section');
+                sections.forEach(s => s.classList.remove('active'));
+                const target = document.getElementById(targetSectionId);
+                if (target) target.classList.add('active');
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                if (sectionTitleEl) sectionTitleEl.textContent = link.textContent.trim();
+            });
+        });
+    }
+
     function handleLogout() {
-        // Clear the session
-        sessionStorage.removeItem('accessToken');
-        sessionStorage.removeItem('refreshToken'); // Also clear refresh token if you use one
-        
-        // Redirect to home or login page
+        sessionStorage.clear();
         window.location.href = 'index.html';
     }
-    
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
+
+    // --- FORM SUBMISSION HANDLERS ---
+
+    if (profileForm) {
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // This would call your updateUser Lambda
+            showNotification('Update functionality not yet implemented.', 'info');
+        });
+    }
+
+    if (privacyForm) {
+        // This would call your changePassword Lambda
     }
     
     // --- INITIALIZATION ---
+    setupNavigation();
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
     initializeProfilePage();
 });
 </script>
