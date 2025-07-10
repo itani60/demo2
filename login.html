@@ -719,13 +719,33 @@ function onGoogleScriptLoad() {
 
 // This function handles the response from Google after a successful sign-in.
 async function handleGoogleCredentialResponse(response) {
-    const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google'; 
+    const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google';
     const alertContainer = document.getElementById('alert-container');
     alertContainer.innerHTML = `<div class="alert success" style="padding:15px; background: #28a745; color: white; border-radius: 5px;">Google sign-in successful! Please wait...</div>`;
     
-    // For now, this will show the frontend is working. The next step is building the backend.
-    console.log("Received Google credential:", response.credential);
-    alert("Google Login button works! Now we need to build the backend Lambda to process the token.");
+    try {
+        console.log("Sending Google credential to backend...");
+        const result = await fetch(GOOGLE_AUTH_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential: response.credential })
+        });
+        
+        const data = await result.json();
+        console.log("Backend response:", data);
+        
+        if (result.ok) {
+            // Store tokens similar to regular login
+            sessionStorage.setItem('accessToken', data.accessToken);
+            sessionStorage.setItem('idToken', data.idToken);
+            window.location.href = 'profile.html';
+        } else {
+            alertContainer.innerHTML = `<div class="alert error">Authentication failed: ${data.message}</div>`;
+        }
+    } catch (error) {
+        console.error("Google authentication error:", error);
+        alertContainer.innerHTML = `<div class="alert error">Connection error. Please try again later.</div>`;
+    }
 }
 
 // This function is called by the "Forgot Password" link's onclick attribute.
