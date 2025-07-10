@@ -688,7 +688,7 @@ function onGoogleScriptLoad() {
 
 // This function handles the response from Google after a successful sign-in.
 async function handleGoogleCredentialResponse(response) {
-    const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/google'; // You still need to create this backend
+    const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google'; 
     const alertContainer = document.getElementById('alert-container');
     alertContainer.innerHTML = `<div class="alert success" style="padding:15px; background: #28a745; color: white; border-radius: 5px;">Google sign-in successful! Please wait...</div>`;
     
