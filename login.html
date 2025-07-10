@@ -8,9 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <meta name="google-signin-client_id" content="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <style>
+ <style>
         :root {
             --primary-color: #f80101;
             --primary-hover: #d80000;
@@ -601,12 +600,14 @@
                 <p>Sign in to your account to continue</p>
             </div>
             <div id="alert-container" aria-live="polite"></div>
+
             <div id="google-signin-btn-container">
-                <button type="button" class="google-login-btn" id="google-login-btn" style="width:100%;display:flex;align-items:center;justify-content:center;">
+                 <button type="button" class="google-login-btn" id="google-login-btn" style="width:100%;display:flex;align-items:center;justify-content:center;">
                     <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-logo">
                     <span>Sign in with Google</span>
                 </button>
             </div>
+
             <div class="social-login-divider">
                 <span>or continue with email</span>
             </div>
@@ -648,7 +649,6 @@
         </div>
     </div>
 
-    <!-- Forgot Password Modal -->
     <div class="modal-overlay" id="forgotPasswordModal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <div class="modal-container">
             <div class="modal-header">
@@ -673,16 +673,79 @@
     </div>
 
 <script>
-//
-// THIS IS THE CORRECT, COMPLETE SCRIPT FOR YOUR LOGIN.HTML PAGE
-//
+// This function will be called when the Google GSI library is loaded.
+function onGoogleLibraryLoad() {
+
+    // --- GOOGLE SIGN-IN CONFIGURATION ---
+    const GOOGLE_CLIENT_ID = "982307721628-vjauenec4eb7nnu892vqac2ohqp4chrs.apps.googleusercontent.com"; // <-- IMPORTANT: REPLACE WITH YOUR CLIENT ID
+
+    // This is the backend endpoint that will receive the ID token for verification.
+    const GOOGLE_LOGIN_API_ENDPOINT = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google'; // <-- IMPORTANT: REPLACE WITH YOUR LAMBDA URL
+
+    // 1. Initialize the Google Identity Services client
+    google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse // The function to call after a user signs in
+    });
+
+    // 2. Render the Google Sign-In button
+    google.accounts.id.renderButton(
+        document.getElementById("google-signin-btn-container"),
+        { 
+            theme: "outline", 
+            size: "large",
+            type: "standard",
+            text: "signin_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+            width: "396" // Match the container width
+        }
+    );
+
+    // This function handles the response from Google after a successful sign-in.
+    async function handleCredentialResponse(response) {
+        // The `credential` field contains the ID Token (a JWT).
+        const idToken = response.credential;
+        showAlert('Signing in with Google...', 'success');
+
+        try {
+            const res = await fetch(GOOGLE_LOGIN_API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ idToken: idToken })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // Assuming your backend returns its own tokens upon successful verification
+                sessionStorage.setItem('accessToken', data.accessToken);
+                sessionStorage.setItem('idToken', data.idToken);
+                showAlert('Google sign-in successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'profile.html'; // Redirect to a protected page
+                }, 1000);
+            } else {
+                showAlert(data.message || 'Google sign-in failed. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Google sign-in request failed:', error);
+            showAlert('Could not connect to the server for Google Sign-In.', 'error');
+        }
+    }
+}
+
+// Call the initialization function when the script is loaded
+window.onload = onGoogleLibraryLoad;
+
+// --- ALL YOUR EXISTING JAVASCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- CONFIGURATION ---
     const api = {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
-        // Make sure to create and add your forgotPassword API endpoint URL here
-        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password' 
+        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password'
     };
     
     // --- ELEMENT SELECTORS ---
@@ -694,10 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertContainer = document.getElementById('alert-container');
     const passwordToggle = document.getElementById('passwordToggle');
     const forgotPasswordModal = document.getElementById('forgotPasswordModal');
-    const resetEmailInput = document.getElementById('resetEmail');
     const cancelResetBtn = document.getElementById('cancelResetBtn');
-    const submitResetBtn = document.getElementById('submitResetBtn');
-    const submitResetText = document.getElementById('submitResetText');
     const registerLink = document.getElementById('register-link');
     const backToHomeBtn = document.getElementById('backToHomeBtn');
 
@@ -728,15 +788,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- EVENT LISTENERS ---
+    // --- EVENT LISTENERS (Email/Password, Modals, etc.) ---
 
-    // 1. Login Form Submission
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            showAlert(''); // Clear previous alerts
+            showAlert('');
             setButtonLoading(loginBtn, loginBtnText, true);
-
             try {
                 const response = await fetch(api.login, {
                     method: 'POST',
@@ -750,19 +808,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (response.ok) {
-                    // --- THIS IS THE CORRECTED LOGIC ---
-                    // 1. Save the tokens to the browser's session storage.
                     sessionStorage.setItem('accessToken', data.accessToken);
                     sessionStorage.setItem('idToken', data.idToken);
-
-                    // 2. Show success message.
                     showAlert('Login successful! Redirecting...', 'success');
-
-                    // 3. Redirect to the profile page.
                     setTimeout(() => {
                         window.location.href = 'profile.html';
                     }, 1000);
-                    
                 } else {
                     showAlert(data.message || 'An unknown error occurred.');
                     setButtonLoading(loginBtn, loginBtnText, false);
@@ -775,7 +826,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Password Visibility Toggle
     if (passwordToggle) {
         passwordToggle.addEventListener('click', () => {
             const isPassword = passwordInput.type === 'password';
@@ -784,7 +834,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // 3. Forgot Password Modal Logic
     window.forgotPassword = () => { 
         if(forgotPasswordModal) forgotPasswordModal.classList.add('active');
     };
@@ -793,7 +842,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active'));
     }
 
-    // 4. Navigation
     if(registerLink) {
         registerLink.addEventListener('click', (event) => {
             event.preventDefault();
@@ -806,12 +854,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'index.html';
         });
     }
-    
-    // 5. Google Sign-In placeholder
-    document.getElementById('google-login-btn')?.addEventListener('click', () => {
-        showAlert('Google Sign-In is not yet configured.', 'warning');
-    });
-
 });
 </script>
 </body>
