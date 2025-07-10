@@ -3,63 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Add Content Security Policy to mitigate iframe sandbox risks -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com https://apis.google.com 'unsafe-inline'; frame-src https://accounts.google.com; connect-src https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com; img-src 'self' https://comparehub-smartphone-images.s3.af-south-1.amazonaws.com https://*.googleusercontent.com data:; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
     <title>Login | CompareHub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        // Debug variable to check if Google script loads
-        window.googleScriptLoaded = false;
-        console.log("Page loading - Google script not yet loaded");
-    </script>
-    <!-- Load Google Sign-In API with better error handling -->
-    <script>
-        // First define a function to load the Google script
-        function loadGoogleScript() {
-                    const script = document.createElement('script');
-                    script.src = "https://accounts.google.com/gsi/client";
-                    script.async = true;
-                    script.onload = onGoogleScriptLoad;
-                    
-                    // Track load attempts
-                    window.googleScriptLoadAttempts = (window.googleScriptLoadAttempts || 0) + 1;
-                    
-                    script.onerror = () => {
-                        console.error("Failed to load Google script");
-                        
-                        // Show fallback after multiple failed attempts
-                        if (window.googleScriptLoadAttempts >= 2) {
-                            console.log("Multiple load attempts failed, showing fallback");
-                            const fallbackBtn = document.getElementById('google-signin-fallback');
-                            const originalBtn = document.getElementById('google-signin-btn-container');
-                            
-                            if (fallbackBtn && originalBtn) {
-                                fallbackBtn.style.display = 'block';
-                                originalBtn.style.display = 'none';
-                            }
-                            
-                            // Show error message
-                            const alertContainer = document.getElementById('alert-container');
-                            if (alertContainer) {
-                                alertContainer.innerHTML = `<div class="alert warning">Google Sign-In could not be loaded. You can still sign in with email and password.</div>`;
-                            }
-                        } else {
-                            // Try again after a short delay, with increasing timeout
-                            const delay = 2000 * window.googleScriptLoadAttempts;
-                            console.log(`Will retry loading Google script in ${delay/1000} seconds`);
-                            setTimeout(loadGoogleScript, delay);
-                        }
-                    };
-                    
-                    document.head.appendChild(script);
-                }
-                
-                // Call it after a short delay to ensure DOM is ready
-                setTimeout(loadGoogleScript, 500);
-    </script>
+    <meta name="google-signin-client_id" content="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
         :root {
             --primary-color: #f80101;
@@ -78,10 +28,6 @@
             --shadow-medium: 0 5px 25px rgba(0, 0, 0, 0.15);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            --google-blue: #4285F4;
-            --google-red: #EA4335;
-            --google-yellow: #FBBC05;
-            --google-green: #34A853;
         }
 
         @keyframes slideUp {
@@ -308,7 +254,7 @@
         }
 
         .google-logo { width: 24px; height: 24px; }
-        
+
         .login-btn { 
             background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); 
             color: white; 
@@ -393,7 +339,7 @@
             color: var(--secondary-hover); 
             text-decoration: underline; 
         }
-        
+
         .register-link { 
             text-align: center; 
             margin-top: 24px; 
@@ -456,7 +402,7 @@
             color: var(--primary-color);
             text-decoration: underline;
         }
-        
+
         .alert {
             padding: 16px 20px; 
             margin-bottom: 24px; 
@@ -634,7 +580,7 @@
             .login-form-container {
                 padding: 24px;
             }
-            
+
             .form-header h2 {
                 font-size: 1.6rem;
             }
@@ -655,18 +601,12 @@
                 <p>Sign in to your account to continue</p>
             </div>
             <div id="alert-container" aria-live="polite"></div>
-            
-            <div id="google-signin-btn-container" style="margin-bottom: 28px; display: flex; justify-content: center;"></div>
-            
-            <!-- Fallback button in case Google Sign-In fails to load -->
-            <div id="google-signin-fallback" style="display: none; margin-bottom: 28px; text-align: center;">
-                <button type="button" class="google-login-btn" onclick="window.location.reload()">
-                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxwYXRoIGQ9Ik05IDE4YzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNNCAxMC43YTUuNCA1LjQgMCAwIDEgMC0zLjRWNUgxYTkgOSAwIDAgMCAwIDhsMy0yLjN6IiBmaWxsPSIjRkJCQzA1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNOSAzLjZjMS4zIDAgMi41LjQgMy40IDEuM0wxNSAyLjNBOSA5IDAgMCAwIDEgNWwzIDIuNGE1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PHBhdGggZD0iTTAgMGgxOHYxOEgweiIvPjwvZz48L3N2Zz4=" alt="Google logo" class="google-logo">
+            <div id="google-signin-btn-container">
+                <button type="button" class="google-login-btn" id="google-login-btn" style="width:100%;display:flex;align-items:center;justify-content:center;">
+                    <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-logo">
                     <span>Sign in with Google</span>
                 </button>
-                <p style="font-size: 0.8rem; color: #666; margin-top: 8px;">Google Sign-In not loading? Click to retry.</p>
             </div>
-
             <div class="social-login-divider">
                 <span>or continue with email</span>
             </div>
@@ -708,6 +648,7 @@
         </div>
     </div>
 
+    <!-- Forgot Password Modal -->
     <div class="modal-overlay" id="forgotPasswordModal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <div class="modal-container">
             <div class="modal-header">
@@ -730,196 +671,200 @@
             </div>
         </div>
     </div>
+
 <script>
-// --- GLOBAL FUNCTIONS FOR GOOGLE & ONCLICK ---
-
-// This function will be called by Google's library once it is ready.
-function onGoogleScriptLoad() {
-    console.log("Google script loaded successfully - onGoogleScriptLoad called");
-    window.googleScriptLoaded = true;
-    
-    const GOOGLE_CLIENT_ID = '982307721628-vjauenec4eb7nnu892vqac2ohqp4chrs.apps.googleusercontent.com';
-    const alertContainer = document.getElementById('alert-container');
-    
-    try {
-        console.log("Attempting to initialize Google Sign-In");
-        
-        // Check if Google object exists
-        if (typeof google === 'undefined') {
-            throw new Error("Google object is undefined");
-        }
-        if (typeof google.accounts === 'undefined') {
-            throw new Error("google.accounts is undefined");
-        }
-        if (typeof google.accounts.id === 'undefined') {
-            throw new Error("google.accounts.id is undefined");
-        }
-        
-        // Initialize Google Sign-In
-        google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleCredentialResponse,
-            // Add error callback
-            error_callback: (error) => {
-                console.error("Google Sign-In error:", error);
-                if (alertContainer) {
-                    alertContainer.innerHTML = `<div class="alert error">Google Sign-In error. Please try again later.</div>`;
-                }
-            }
-        });
-        
-        // Find and validate button container
-        const buttonContainer = document.getElementById("google-signin-btn-container");
-        if (!buttonContainer) {
-            throw new Error("Button container not found");
-        }
-        console.log("Button container found:", buttonContainer);
-        
-        // Render the button
-        google.accounts.id.renderButton(
-            buttonContainer,
-            {
-                theme: "outline",
-                size: "large",
-                shape: "pill",
-                width: "398",
-                text: "signin_with" // Explicitly set to "Sign in with Google"
-            }
-        );
-        console.log("Button render function called");
-    } catch (error) {
-        console.error("Google Sign-In could not be initialized:", error);
-        
-        // Show user-friendly error message
-        if (alertContainer) {
-            alertContainer.innerHTML = `<div class="alert error">Unable to initialize Google Sign-In. Please try again later or use email login.</div>`;
-        }
-        
-        // Try to reload the script after a delay if it's a critical error
-        if (typeof google === 'undefined') {
-            console.log("Will attempt to reload Google script in 3 seconds");
-            setTimeout(loadGoogleScript, 3000);
-        }
-    }
-}
-
-// This function handles the response from Google after a successful sign-in.
-async function handleGoogleCredentialResponse(response) {
-    const GOOGLE_AUTH_API_URL = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google';
-    const alertContainer = document.getElementById('alert-container');
-    alertContainer.innerHTML = `<div class="alert success" style="padding:15px; background: #28a745; color: white; border-radius: 5px;">Google sign-in successful! Please wait...</div>`;
-    
-    try {
-        console.log("Sending Google credential to backend...");
-        const result = await fetch(GOOGLE_AUTH_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: response.credential })
-        });
-        
-        const data = await result.json();
-        console.log("Backend response:", data);
-        
-        if (result.ok) {
-            // Store tokens similar to regular login
-            sessionStorage.setItem('accessToken', data.accessToken);
-            sessionStorage.setItem('idToken', data.idToken);
-            window.location.href = 'profile.html';
-        } else {
-            alertContainer.innerHTML = `<div class="alert error">Authentication failed: ${data.message}</div>`;
-        }
-    } catch (error) {
-        console.error("Google authentication error:", error);
-        alertContainer.innerHTML = `<div class="alert error">Connection error. Please try again later.</div>`;
-    }
-}
-
-// This function is called by the "Forgot Password" link's onclick attribute.
-function forgotPassword() {
-    document.getElementById('forgotPasswordModal')?.classList.add('active');
-}
-
-
-// --- MAIN SCRIPT ---
+//
+// THIS IS THE CORRECT, COMPLETE SCRIPT FOR YOUR LOGIN.HTML PAGE
+//
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded event fired");
-    
-    // No need to check for Google script loading here anymore
-    // as we're handling it with the loadGoogleScript function
 
+    // --- CONFIGURATION ---
     const api = {
         login: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/login',
+        // Make sure to create and add your forgotPassword API endpoint URL here
+        forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password' 
         forgotPassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/forgot-password'
     };
-    
+
+    // --- ELEMENT SELECTORS ---
     const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginBtnText = document.getElementById('loginBtnText');
+    const alertContainer = document.getElementById('alert-container');
     const passwordToggle = document.getElementById('passwordToggle');
     const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const resetEmailInput = document.getElementById('resetEmail');
     const cancelResetBtn = document.getElementById('cancelResetBtn');
     const submitResetBtn = document.getElementById('submitResetBtn');
+    const submitResetText = document.getElementById('submitResetText');
+    const registerLink = document.getElementById('register-link');
+    const backToHomeBtn = document.getElementById('backToHomeBtn');
 
-    // Email/Password Login Form Submission
+    // --- HELPER FUNCTIONS ---
+    function showAlert(message, type = 'error') {
+        if (message) {
+            alertContainer.innerHTML = `
+                <div class="alert ${type}" role="alert">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            alertContainer.innerHTML = `<div class="alert ${type}" role="alert"><span>${message}</span></div>`;
+        } else {
+            alertContainer.innerHTML = '';
+        }
+    }
+
+    function setButtonLoading(button, textElement, isLoading) {
+        if (!textElement.dataset.originalText) {
+    function setButtonLoading(button, textElement, isLoading, loadingText = 'Processing...') {
+        if (textElement && !textElement.dataset.originalText) {
+            textElement.dataset.originalText = textElement.textContent;
+        }
+        if (isLoading) {
+            button.disabled = true;
+            textElement.textContent = 'Processing...';
+            if (textElement) textElement.textContent = loadingText;
+        } else {
+            button.disabled = false;
+            textElement.textContent = textElement.dataset.originalText;
+            if (textElement) textElement.textContent = textElement.dataset.originalText;
+        }
+    }
+
+    // --- EVENT LISTENERS ---
+
+    // 1. Login Form Submission
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            showAlert(''); // Clear previous alerts
+            setButtonLoading(loginBtn, loginBtnText, true);
+            showAlert('');
+            setButtonLoading(loginBtn, loginBtnText, true, 'Signing In...');
+
             try {
                 const response = await fetch(api.login, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({
+                        email: emailInput.value,
+                        password: passwordInput.value
+                    })
                 });
+
                 const data = await response.json();
+
                 if (response.ok) {
+                    // --- THIS IS THE CORRECTED LOGIC ---
+                    // 1. Save the tokens to the browser's session storage.
                     sessionStorage.setItem('accessToken', data.accessToken);
                     sessionStorage.setItem('idToken', data.idToken);
-                    window.location.href = 'profile.html';
+
+                    // 2. Show success message.
+                    showAlert('Login successful! Redirecting...', 'success');
+
+                    // 3. Redirect to the profile page.
+                    setTimeout(() => {
+                        window.location.href = 'profile.html';
+                    }, 1000);
+                    
+                    setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
                 } else {
-                    alert(data.message || 'An error occurred.');
+                    showAlert(data.message || 'An unknown error occurred.');
+                    setButtonLoading(loginBtn, loginBtnText, false);
                 }
             } catch (error) {
-                alert('Could not connect to the server.');
+                console.error('Login request failed:', error);
+                showAlert('Could not connect to the server. Please check your connection.');
+                showAlert('Could not connect to the server.', 'error');
+                setButtonLoading(loginBtn, loginBtnText, false);
             }
         });
     }
 
-    // Password Visibility Toggle
+    // 2. Password Visibility Toggle
     if (passwordToggle) {
         passwordToggle.addEventListener('click', () => {
-            const passwordInput = document.getElementById('password');
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
             passwordToggle.querySelector('i').className = `fas ${isPassword ? 'fa-eye-slash' : 'fa-eye'}`;
         });
     }
-    
-    // Forgot Password Modal "Cancel" Button
+
+    // 3. Forgot Password Modal Logic
+    window.forgotPassword = () => { 
+        if(forgotPasswordModal) forgotPasswordModal.classList.add('active');
+        if (forgotPasswordModal) forgotPasswordModal.classList.add('active');
+    };
+
     if (cancelResetBtn) {
         cancelResetBtn.addEventListener('click', () => forgotPasswordModal.classList.remove('active'));
     }
     
-    // Forgot Password Modal "Send Code" Button
+    // THIS IS THE CORRECTED "SEND CODE" BUTTON LOGIC
     if (submitResetBtn) {
         submitResetBtn.addEventListener('click', async () => {
-            const email = document.getElementById('resetEmail').value.trim();
-            if (!email) return alert('Please enter your email address.');
-            
+            const email = resetEmailInput.value.trim();
+            if (!email) {
+                alert('Please enter your email address.');
+                return;
+            }
+
+    // 4. Navigation
+    if(registerLink) {
+        registerLink.addEventListener('click', (event) => {
+            event.preventDefault();
+            window.location.href = 'register.html';
+        });
+    }
+            setButtonLoading(submitResetBtn, submitResetText, true, 'Sending...');
+
             try {
                 const response = await fetch(api.forgotPassword, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ email: email })
                 });
+
+    if(backToHomeBtn) {
+        backToHomeBtn.addEventListener('click', () => {
+            window.location.href = 'index.html';
                 if (response.ok) {
+                    // **THE FIX:** Redirect to the reset password page, passing the email.
                     window.location.href = `reset-password.html?email=${encodeURIComponent(email)}`;
                 } else {
                     const data = await response.json();
-                    alert(data.message || 'An error occurred.');
+                    showAlert(data.message || 'An error occurred.');
+                    setButtonLoading(submitResetBtn, submitResetText, false);
                 }
             } catch (error) {
-                alert('Could not connect to the server.');
+                showAlert('Could not connect to the server.', 'error');
+                setButtonLoading(submitResetBtn, submitResetText, false);
             }
+        });
+    }
+
+    // 5. Google Sign-In placeholder
+    document.getElementById('google-login-btn')?.addEventListener('click', () => {
+        showAlert('Google Sign-In is not yet configured.', 'warning');
+    });
+
+    // 4. Navigation Links
+    if (registerLink) {
+        registerLink.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'register.html'; });
+    }
+    if (backToHomeBtn) {
+        backToHomeBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
+    }
+    
+    // 5. Google Sign-In placeholder (as in your original script)
+    const googleBtn = document.getElementById('google-login-btn');
+    if (googleBtn) {
+        googleBtn.addEventListener('click', () => {
+            showAlert('Google Sign-In is not yet configured.', 'warning');
         });
     }
 });
