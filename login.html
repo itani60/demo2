@@ -840,7 +840,7 @@
     // const idToken = googleUser.credential;
 
     // Send the ID token to your backend to store/fetch user info
-    const idToken = googleUser.credential || googleUser.getAuthResponse().id_token;
+    const idToken = googleUser.credential || (googleUser.getAuthResponse && googleUser.getAuthResponse().id_token);
 
     // Call your backend to store user info and get the Google user "sub" (ID) or email
     const response = await fetch('https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/google-login', {
@@ -857,6 +857,9 @@
       sessionStorage.setItem('accessToken', userData.userId || userData.email);
       // Optionally store user info for display
       sessionStorage.setItem('userInfo', JSON.stringify(userData));
+      // Debug: Confirm values are set
+      console.log('Google login: set loginProvider =', sessionStorage.getItem('loginProvider'));
+      console.log('Google login: set accessToken =', sessionStorage.getItem('accessToken'));
       // Redirect to profile page
       window.location.href = 'profile.html';
     } else {
@@ -864,4 +867,7 @@
     }
   }
 </script>
+
+</body>
+</html>
 
