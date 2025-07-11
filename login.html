@@ -828,3 +828,40 @@
 </body>
 </html>
 
+
+<!-- Google Login Handler: Add this script at the end of the body or after your Google login button logic -->
+<script>
+  // Example: This function should be called after Google login is successful
+  async function onGoogleLoginSuccess(googleUser) {
+    // If using Google Sign-In JS SDK, you get the ID token like this:
+    // const idToken = googleUser.getAuthResponse().id_token;
+
+    // If using Google Identity Services, you get the credential directly:
+    // const idToken = googleUser.credential;
+
+    // Send the ID token to your backend to store/fetch user info
+    const idToken = googleUser.credential || googleUser.getAuthResponse().id_token;
+
+    // Call your backend to store user info and get the Google user "sub" (ID) or email
+    const response = await fetch('https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/google-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken })
+    });
+
+    if (response.ok) {
+      const userData = await response.json();
+      // Store login provider and user ID/email for profile.html
+      sessionStorage.setItem('loginProvider', 'google');
+      // Prefer sub (Google user ID), fallback to email
+      sessionStorage.setItem('accessToken', userData.userId || userData.email);
+      // Optionally store user info for display
+      sessionStorage.setItem('userInfo', JSON.stringify(userData));
+      // Redirect to profile page
+      window.location.href = 'profile.html';
+    } else {
+      alert('Google login failed. Please try again.');
+    }
+  }
+</script>
+
