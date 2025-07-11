@@ -1118,15 +1118,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // Debug: Log which endpoint and token are being used
+            console.log('Profile fetch: endpoint =', userApi, ', accessToken =', accessToken);
+
             const response = await fetch(userApi, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             if (!response.ok) {
                 const errorText = await response.text();
+                console.error('Profile fetch failed. Status:', response.status, 'Response:', errorText);
                 throw new Error('Could not fetch user data. Server response: ' + errorText);
             }
             
             const userData = await response.json();
+            console.log('Profile fetch: userData =', userData);
             populateUI(userData);
         } catch (error) {
             console.error('Profile fetch error:', error);
@@ -1268,6 +1273,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
 
