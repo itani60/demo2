@@ -860,6 +860,12 @@
       // Debug: Confirm values are set
       console.log('Google login: set loginProvider =', sessionStorage.getItem('loginProvider'));
       console.log('Google login: set accessToken =', sessionStorage.getItem('accessToken'));
+      // Show visible alert for debugging
+      alert(
+        'Google login success!\n' +
+        'loginProvider: ' + sessionStorage.getItem('loginProvider') + '\n' +
+        'accessToken: ' + sessionStorage.getItem('accessToken')
+      );
       // Redirect to profile page
       window.location.href = 'profile.html';
     } else {
