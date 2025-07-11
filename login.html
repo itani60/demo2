@@ -681,7 +681,7 @@
     }
 
     // --- Google Sign-In Logic (Corrected to use Cognito flow) ---
-    const COGNITO_GOOGLE_SIGNIN_ENDPOINT = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google-signin';
+    const COGNITO_GOOGLE_SIGNIN_ENDPOINT = 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/auth/google';
 
     async function handleGoogleCredentialResponse(response) {
         const googleIdToken = response.credential;
