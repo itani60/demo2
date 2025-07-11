@@ -694,11 +694,19 @@
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Sign-in failed.');
-            
-            // Save the official Cognito tokens
-            sessionStorage.setItem('accessToken', data.accessToken);
-            sessionStorage.setItem('refreshToken', data.refreshToken);
 
+            // Set loginProvider and accessToken for Google login
+            sessionStorage.setItem('loginProvider', 'google');
+            // Prefer sub (Google user ID), fallback to email, fallback to Cognito accessToken
+            sessionStorage.setItem('accessToken', data.userId || data.email || data.accessToken);
+            if (data.refreshToken) sessionStorage.setItem('refreshToken', data.refreshToken);
+            sessionStorage.setItem('userInfo', JSON.stringify(data));
+            // Debug: Show visible alert
+            alert(
+              'Google login success!\n' +
+              'loginProvider: ' + sessionStorage.getItem('loginProvider') + '\n' +
+              'accessToken: ' + sessionStorage.getItem('accessToken')
+            );
             showAlert('Sign-in successful! Redirecting...', 'success');
             setTimeout(() => { window.location.href = 'profile.html'; }, 1000);
         } catch (error) {
@@ -876,4 +884,5 @@
 
 </body>
 </html>
+
 
