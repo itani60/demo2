@@ -1094,10 +1094,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initializeProfilePage() {
         const accessToken = sessionStorage.getItem('accessToken');
         let loginProvider = sessionStorage.getItem('loginProvider'); // 'cognito' or 'google'
-        if (!accessToken) {
-            window.location.href = 'login.html';
-            return;
-        }
 
         // Fallback: If loginProvider is missing, try to detect Google token by checking userInfo in sessionStorage
         if (!loginProvider) {
@@ -1111,15 +1107,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Choose endpoint based on login provider
-        let userApi = API.getUser;
+        // Defensive: If no accessToken, do not call any endpoint
+        if (!accessToken) {
+            alert('No access token found. Please log in again.');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Defensive: Only call the correct endpoint for the login provider
+        let userApi = null;
         if (loginProvider === 'google') {
             userApi = API.getGoogleUser;
+        } else if (loginProvider === 'cognito' || !loginProvider) {
+            userApi = API.getUser;
+        }
+
+        if (!userApi) {
+            alert('Could not determine user API endpoint. Please log in again.');
+            window.location.href = 'login.html';
+            return;
         }
 
         try {
             // Debug: Log which endpoint and token are being used
-            console.log('Profile fetch: endpoint =', userApi, ', accessToken =', accessToken);
+            console.log('Profile fetch: endpoint =', userApi, ', accessToken =', accessToken, ', loginProvider =', loginProvider);
 
             const response = await fetch(userApi, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
