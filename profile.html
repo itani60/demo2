@@ -1093,10 +1093,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function initializeProfilePage() {
         const accessToken = sessionStorage.getItem('accessToken');
-        const loginProvider = sessionStorage.getItem('loginProvider'); // 'cognito' or 'google'
+        let loginProvider = sessionStorage.getItem('loginProvider'); // 'cognito' or 'google'
         if (!accessToken) {
             window.location.href = 'login.html';
             return;
+        }
+
+        // Fallback: If loginProvider is missing, try to detect Google token by checking userInfo in sessionStorage
+        if (!loginProvider) {
+            try {
+                const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
+                if (userInfo && userInfo.provider === 'google') {
+                    loginProvider = 'google';
+                }
+            } catch (e) {
+                // ignore
+            }
         }
 
         // Choose endpoint based on login provider
@@ -1109,13 +1121,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(userApi, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
-            if (!response.ok) throw new Error('Could not fetch user data.');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error('Could not fetch user data. Server response: ' + errorText);
+            }
             
             const userData = await response.json();
             populateUI(userData);
         } catch (error) {
-            console.error(error);
-            alert('Your session has expired. Please log in again.');
+            console.error('Profile fetch error:', error);
+            alert('Your session has expired or there was a problem fetching your profile. Please log in again.');
             handleLogout();
         }
     }
@@ -1253,5 +1268,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
+
 
 
