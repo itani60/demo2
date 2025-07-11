@@ -1059,7 +1059,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
     const API = {
-        getUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user',      // e.g., https://.../user
+        getUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user',      // Cognito user info
+        getGoogleUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/google-user', // Google user info
         updateUser: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/user', // e.g., https://.../user (with PUT method)
         changePassword: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/change-password', // e.g., https://.../change-password
         logout: 'https://8e3s6ysoh8.execute-api.af-south-1.amazonaws.com/prod/logout' // e.g., https://.../logout
@@ -1092,13 +1093,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function initializeProfilePage() {
         const accessToken = sessionStorage.getItem('accessToken');
+        const loginProvider = sessionStorage.getItem('loginProvider'); // 'cognito' or 'google'
         if (!accessToken) {
             window.location.href = 'login.html';
             return;
         }
 
+        // Choose endpoint based on login provider
+        let userApi = API.getUser;
+        if (loginProvider === 'google') {
+            userApi = API.getGoogleUser;
+        }
+
         try {
-            const response = await fetch(API.getUser, {
+            const response = await fetch(userApi, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             if (!response.ok) throw new Error('Could not fetch user data.');
@@ -1245,4 +1253,5 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
