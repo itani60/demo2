@@ -1107,18 +1107,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Defensive: If no accessToken, do not call any endpoint
-        if (!accessToken) {
-            alert('No access token found. Please log in again.');
+        // FINAL DEFENSIVE CHECK: If either accessToken or loginProvider is missing, do not call any endpoint
+        if (!accessToken || !loginProvider) {
+            alert('You are not logged in or your session has expired. Please log in again.');
             window.location.href = 'login.html';
             return;
         }
 
-        // Defensive: Only call the correct endpoint for the login provider
+        // Only call the correct endpoint for the login provider
         let userApi = null;
         if (loginProvider === 'google') {
             userApi = API.getGoogleUser;
-        } else if (loginProvider === 'cognito' || !loginProvider) {
+        } else if (loginProvider === 'cognito') {
             userApi = API.getUser;
         }
 
@@ -1284,7 +1284,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
 
 
 
