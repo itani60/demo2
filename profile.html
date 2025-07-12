@@ -1056,103 +1056,55 @@
     </footer>
    <script src="wishlistmodal.js"></script> 
 <script>
-    // These objects are now globally available from the script tag we added in the <head>.
-    const { Amplify, Auth } = aws_amplify;
+    // This function runs automatically when the page is loaded
+    document.addEventListener('DOMContentLoaded', () => {
 
-    // ----- CONFIGURE AMPLIFY -----
-    // This configuration must be on every page where you use Amplify.
-    Amplify.configure({
-        Auth: {
-            // Your Cognito User Pool details
-            region: 'af-south-1',
-            userPoolId: 'af-south-1_OvLvPSbPB',
-            userPoolWebClientId: '58m2earf35nv92c2186evmt0eu',
+        // 1. Try to get the user's profile data from sessionStorage
+        const userProfileString = sessionStorage.getItem('userProfile');
 
-            // Configuration for the login redirect flow
-            oauth: {
-                // IMPORTANT: Replace this with your REAL default Cognito domain
-                domain: 'https://af-south-1ovlvpsbpb.auth.af-south-1.amazoncognito.com',
-                
-                scope: ['email', 'profile', 'openid'],
-                redirectSignIn: 'https://comparehubprices.site/profile.html',
-                redirectSignOut: 'https://comparehubprices.site/login.html',
-                responseType: 'token'
-            },
-            
-            // We use sessionStorage to keep the user logged in across page navigations.
-            storage: window.sessionStorage
+        // 2. If no data is found, the user is not logged in. Redirect to the login page.
+        if (!userProfileString) {
+            console.log("No user profile found in session. Redirecting to login.");
+            window.location.href = 'login.html';
+            return; // Stop the script from running further
+        }
+
+        // 3. If data IS found, parse it and display it on the page
+        const user = JSON.parse(userProfileString);
+
+        // Get all the HTML elements by their ID
+        const profileNameEl = document.getElementById('profileName');
+        const profileEmailEl = document.getElementById('profileEmail');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailInput = document.getElementById('email');
+        const logoutButton = document.getElementById('logoutBtn');
+        
+        // Populate the elements with the user's data
+        if (profileNameEl) profileNameEl.textContent = user.name || '';
+        if (profileEmailEl) profileEmailEl.textContent = user.email || '';
+        if (firstNameInput) {
+            // Split the full name to get first/last for the form
+            const nameParts = (user.name || '').split(' ');
+            firstNameInput.value = nameParts[0] || '';
+            lastNameInput.value = nameParts.slice(1).join(' ') || '';
+        }
+        if (emailInput) emailInput.value = user.email || '';
+
+        // As requested, disable the form fields
+        if (firstNameInput) firstNameInput.disabled = true;
+        if (lastNameInput) lastNameInput.disabled = true;
+        if (emailInput) emailInput.disabled = true;
+
+        // 4. Set up the logout button
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                // Clear the session data and redirect to login
+                sessionStorage.removeItem('userProfile');
+                window.location.href = 'login.html';
+            });
         }
     });
-
-    /**
-     * This is the main function for this page. It checks for a logged-in user
-     * and updates the HTML to display their profile information.
-     */
-    async function checkUserAndRenderProfile() {
-        try {
-            // 1. Ask Amplify for the current authenticated user's data.
-            const user = await Auth.currentAuthenticatedUser();
-            
-            // 2. Get the user's attributes from their session.
-            const givenName = user.attributes.given_name || '';
-            const familyName = user.attributes.family_name || '';
-            const email = user.attributes.email || '';
-            const fullName = `${givenName} ${familyName}`.trim();
-            const initials = (givenName.charAt(0) + familyName.charAt(0)).toUpperCase();
-
-            // 3. Find all your HTML elements by their ID.
-            const avatarInitialsEl = document.getElementById('avatarInitials');
-            const profileNameEl = document.getElementById('profileName');
-            const profileEmailEl = document.getElementById('profileEmail');
-            const firstNameInput = document.getElementById('firstName');
-            const lastNameInput = document.getElementById('lastName');
-            const emailInput = document.getElementById('email');
-
-            // 4. Populate the HTML elements with the user's data.
-            if (avatarInitialsEl) avatarInitialsEl.textContent = initials;
-            if (profileNameEl) profileNameEl.textContent = fullName;
-            if (profileEmailEl) profileEmailEl.textContent = email;
-            if (firstNameInput) firstNameInput.value = givenName;
-            if (lastNameInput) lastNameInput.value = familyName;
-            if (emailInput) emailInput.value = email;
-
-            // 5. As requested, disable the form fields so they are read-only.
-            if (firstNameInput) firstNameInput.disabled = true;
-            if (lastNameInput) lastNameInput.disabled = true;
-            if (emailInput) emailInput.disabled = true;
-
-        } catch (error) {
-            // If Auth.currentAuthenticatedUser() fails, it means the user is not logged in.
-            console.log('User is not authenticated, redirecting to login page.');
-            // Protect this page by redirecting to login.html.
-            window.location.href = 'login.html';
-        }
-    }
-
-    /**
-     * Signs the user out using Amplify and redirects them.
-     */
-    async function handleSignOut() {
-        try {
-            await Auth.signOut();
-            // Amplify will automatically redirect to the `redirectSignOut` URL from the config.
-        } catch (error) {
-            console.error('Error signing out: ', error);
-        }
-    }
-
-    // --- This section connects our functions to your HTML ---
-
-    // Find the logout button and attach the handleSignOut function to its 'click' event.
-    const logoutButton = document.getElementById('logoutBtn');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', handleSignOut);
-    }
-    
-    // When the page's content is fully loaded, run our main function to check the user
-    // and render their profile information.
-    window.addEventListener('DOMContentLoaded', checkUserAndRenderProfile);
-
 </script>
 </body>
 </html>
