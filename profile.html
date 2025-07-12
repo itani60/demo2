@@ -1057,54 +1057,54 @@
    <script src="wishlistmodal.js"></script> 
 <script>
     // This function runs automatically when the page is loaded
-    document.addEventListener('DOMContentLoaded', () => {
-
-        // 1. Try to get the user's profile data from sessionStorage
-        const userProfileString = sessionStorage.getItem('userProfile');
-
-        // 2. If no data is found, the user is not logged in. Redirect to the login page.
-        if (!userProfileString) {
-            console.log("No user profile found in session. Redirecting to login.");
-            window.location.href = 'login.html';
-            return; // Stop the script from running further
-        }
-
-        // 3. If data IS found, parse it and display it on the page
-        const user = JSON.parse(userProfileString);
-
-        // Get all the HTML elements by their ID
-        const profileNameEl = document.getElementById('profileName');
-        const profileEmailEl = document.getElementById('profileEmail');
-        const firstNameInput = document.getElementById('firstName');
-        const lastNameInput = document.getElementById('lastName');
-        const emailInput = document.getElementById('email');
-        const logoutButton = document.getElementById('logoutBtn');
+    document.addEventListener('DOMContentLoaded', async () => {
         
-        // Populate the elements with the user's data
-        if (profileNameEl) profileNameEl.textContent = user.name || '';
-        if (profileEmailEl) profileEmailEl.textContent = user.email || '';
-        if (firstNameInput) {
-            // Split the full name to get first/last for the form
-            const nameParts = (user.name || '').split(' ');
-            firstNameInput.value = nameParts[0] || '';
-            lastNameInput.value = nameParts.slice(1).join(' ') || '';
-        }
-        if (emailInput) emailInput.value = user.email || '';
+        // This is the new endpoint for the getGoogleUserInfo Lambda function
+        const profileApiEndpoint = 'https://0roow8lbp4.execute-api.af-south-1.amazonaws.com/profile';
 
-        // As requested, disable the form fields
-        if (firstNameInput) firstNameInput.disabled = true;
-        if (lastNameInput) lastNameInput.disabled = true;
-        if (emailInput) emailInput.disabled = true;
-
-        // 4. Set up the logout button
-        if (logoutButton) {
-            logoutButton.addEventListener('click', () => {
-                // Clear the session data and redirect to login
-                sessionStorage.removeItem('userProfile');
-                window.location.href = 'login.html';
+        try {
+            // 1. Call your new backend endpoint to get the user's data.
+            // 'credentials: "include"' is CRITICAL. It tells the browser to send the secure authToken cookie.
+            const response = await fetch(profileApiEndpoint, {
+                method: 'GET',
+                credentials: 'include' 
             });
+
+            if (!response.ok) {
+                // If the Lambda returned an error (like 401 Unauthorized), throw an error.
+                throw new Error('Session is not valid. Please log in.');
+            }
+
+            const user = await response.json();
+
+            // 2. If data is returned successfully, display it on the page.
+            const profileNameEl = document.getElementById('profileName');
+            const profileEmailEl = document.getElementById('profileEmail');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            const emailInput = document.getElementById('email');
+
+            if (profileNameEl) profileNameEl.textContent = user.fullName || '';
+            if (profileEmailEl) profileEmailEl.textContent = user.email || '';
+            if (firstNameInput) firstNameInput.value = user.givenName || '';
+            if (lastNameInput) lastNameInput.value = user.familyName || '';
+            if (emailInput) emailInput.value = user.email || '';
+
+            // As requested, disable the form fields
+            if (firstNameInput) firstNameInput.disabled = true;
+            if (lastNameInput) lastNameInput.disabled = true;
+            if (emailInput) emailInput.disabled = true;
+
+        } catch (error) {
+            // 3. If any error occurs, the user is not properly logged in.
+            // Redirect them to the login page to be safe.
+            console.error("Failed to fetch profile:", error);
+            window.location.href = 'login.html';
         }
     });
+
+    // Note: The logout button logic should be handled by a separate /logout endpoint
+    // that clears the HttpOnly cookie, but for now, this will get your profile displaying.
 </script>
 </body>
 </html>
