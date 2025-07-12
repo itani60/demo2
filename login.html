@@ -366,74 +366,59 @@
     </div>
 
 <script>
-    /**
-     * This is the callback function that Google's library will automatically call
-     * after a user successfully signs in from the pop-up window.
-     * The 'response' object contains the all-important ID Token.
-     */
-    async function handleGoogleLogin(response) {
-        
-        // This is the idToken from Google. It's a long, secure string.
-        const idToken = response.credential;
-        
-        // This is the URL for the backend Lambda function you created.
-        const apiEndpoint = 'https://0roow8lbp4.execute-api.af-south-1.amazonaws.com/auth/google';
-        
-        // This is the div you created for showing error messages.
-        const alertContainer = document.getElementById('alert-container');
-        
-        // Clear any old alerts before we start.
-        alertContainer.innerHTML = '';
+    // These objects are now globally available from the script tag in the <head>.
+    const { Amplify, Auth } = aws_amplify;
 
-        try {
-            // Add the 'loading' class to the body to show a loading state
-            document.body.classList.add('loading');
+    // ----- CONFIGURE AMPLIFY -----
+    // This tells the Amplify library how to connect to your specific User Pool.
+    Amplify.configure({
+        Auth: {
+            // Your Cognito User Pool details
+            region: 'af-south-1',
+            userPoolId: 'af-south-1_OvLvPSbPB',
+            userPoolWebClientId: '58m2earf35nv92c2186evmt0eu',
 
-            // Send the idToken to YOUR backend Lambda function for verification.
-            const backendResponse = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ idToken: idToken }),
-            });
-
-            const data = await backendResponse.json();
-
-            if (!backendResponse.ok) {
-                // If the backend returned an error (e.g., status 500 or 400),
-                // we'll use the message from the backend's response.
-                throw new Error(data.message || 'An unknown error occurred on the server.');
-            }
-
-            // --- SUCCESS ---
-            // If the backend verified the token successfully, it will send back a 200 OK response.
-            // Now, we can redirect the user to their profile page.
-            window.location.href = 'profile.html';
-
-        } catch (error) {
-            console.error('Login failed:', error);
-            // Display the error message in the alert container you created.
-            const errorHtml = `
-                <div class="alert error" style="margin-bottom: 20px;">
-                    <i class="fas fa-times-circle"></i>
-                    <div>
-                        <strong>Login Failed</strong>
-                        <p>${error.message}</p>
-                    </div>
-                </div>`;
-            alertContainer.innerHTML = errorHtml;
-        } finally {
-            // Always remove the loading state, whether it succeeded or failed.
-            document.body.classList.remove('loading');
+            // Configuration for the login redirect flow
+            oauth: {
+                // IMPORTANT: Replace this with your REAL default Cognito domain
+                domain: 'https://af-south-1ovlvpsbpb.auth.af-south-1.amazoncognito.com',
+                
+                scope: ['email', 'profile', 'openid'],
+                redirectSignIn: 'https://comparehubprices.site/profile.html', // The page to go to after a successful login
+                redirectSignOut: 'https://comparehubprices.site/login.html',  // The page to go to after logout
+                responseType: 'token' // This is required for Single-Page Apps
+            },
+            
+            // This uses sessionStorage to keep the user logged in when they
+            // navigate from this page to the profile page.
+            storage: window.sessionStorage
         }
+    });
+
+    /**
+     * This function is called when the Google login button is clicked.
+     * It tells Amplify to start the login process with Google.
+     */
+    async function signInWithGoogle() {
+      try {
+        // This one line handles the entire redirect to Google.
+        await Auth.federatedSignIn({ provider: 'Google' });
+      } catch (error) {
+        console.error('Error signing in with Google', error);
+        // You could display an error message in your #alert-container here if needed.
+      }
     }
 
-    // You can add your other functions like forgotPassword(), etc. here
-    function forgotPassword() {
-        // Your forgot password logic
-        console.log("Forgot password clicked");
+    // --- This section connects our function to your HTML ---
+
+    // Find the Google login button by its ID.
+    const googleLoginButton = document.getElementById('google-login-btn');
+    
+    // Attach our signInWithGoogle function to the button's 'click' event.
+    if (googleLoginButton) {
+        googleLoginButton.addEventListener('click', signInWithGoogle);
     }
+
 </script>
 
 </body>
