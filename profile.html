@@ -1056,55 +1056,38 @@
     </footer>
    <script src="wishlistmodal.js"></script> 
 <script>
-    // This function runs automatically when the page is loaded
     document.addEventListener('DOMContentLoaded', async () => {
-        
-        // This is the new endpoint for the getGoogleUserInfo Lambda function
         const profileApiEndpoint = 'https://0roow8lbp4.execute-api.af-south-1.amazonaws.com/profile';
 
         try {
-            // 1. Call your new backend endpoint to get the user's data.
-            // 'credentials: "include"' is CRITICAL. It tells the browser to send the secure authToken cookie.
+            // --- THIS IS THE CORRECTED PART ---
+            // 'credentials: "include"' tells the browser to send the secure cookies with this request.
             const response = await fetch(profileApiEndpoint, {
                 method: 'GET',
                 credentials: 'include' 
             });
 
-            if (!response.ok) {
-                // If the Lambda returned an error (like 401 Unauthorized), throw an error.
-                throw new Error('Session is not valid. Please log in.');
-            }
+            if (!response.ok) { throw new Error('Session is not valid. Please log in.'); }
 
             const user = await response.json();
 
-            // 2. If data is returned successfully, display it on the page.
-            const profileNameEl = document.getElementById('profileName');
-            const profileEmailEl = document.getElementById('profileEmail');
-            const firstNameInput = document.getElementById('firstName');
-            const lastNameInput = document.getElementById('lastName');
-            const emailInput = document.getElementById('email');
+            // Populate the HTML elements with the user's data
+            document.getElementById('profileName').textContent = user.fullName || '';
+            document.getElementById('profileEmail').textContent = user.email || '';
+            document.getElementById('firstName').value = user.givenName || '';
+            document.getElementById('lastName').value = user.familyName || '';
+            document.getElementById('email').value = user.email || '';
 
-            if (profileNameEl) profileNameEl.textContent = user.fullName || '';
-            if (profileEmailEl) profileEmailEl.textContent = user.email || '';
-            if (firstNameInput) firstNameInput.value = user.givenName || '';
-            if (lastNameInput) lastNameInput.value = user.familyName || '';
-            if (emailInput) emailInput.value = user.email || '';
-
-            // As requested, disable the form fields
-            if (firstNameInput) firstNameInput.disabled = true;
-            if (lastNameInput) lastNameInput.disabled = true;
-            if (emailInput) emailInput.disabled = true;
+            // Disable the form fields
+            document.getElementById('firstName').disabled = true;
+            document.getElementById('lastName').disabled = true;
+            document.getElementById('email').disabled = true;
 
         } catch (error) {
-            // 3. If any error occurs, the user is not properly logged in.
-            // Redirect them to the login page to be safe.
             console.error("Failed to fetch profile:", error);
             window.location.href = 'login.html';
         }
     });
-
-    // Note: The logout button logic should be handled by a separate /logout endpoint
-    // that clears the HttpOnly cookie, but for now, this will get your profile displaying.
 </script>
 </body>
 </html>
