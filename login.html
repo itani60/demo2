@@ -365,74 +365,49 @@
     </div>
 
 <script>
-    /**
-     * This is the callback function that Google's library will automatically call
-     * after a user successfully signs in from the pop-up window.
-     * The 'response' object contains the all-important ID Token.
-     */
-    async function handleGoogleLogin(response) {
-        
-        // This is the idToken from Google. It's a long, secure string.
-        const idToken = response.credential;
-        
-        // This is the URL for the backend Lambda function you created.
-        const apiEndpoint = 'https://0roow8lbp4.execute-api.af-south-1.amazonaws.com/auth/google';
-        
-        // This is the div you created for showing error messages.
-        const alertContainer = document.getElementById('alert-container');
-        
-        // Clear any old alerts before we start.
-        alertContainer.innerHTML = '';
+// In your login.html <script> tag
 
-        try {
-            // Add the 'loading' class to the body to show a loading state
-            document.body.classList.add('loading');
+async function handleGoogleLogin(response) {
+    const idToken = response.credential;
+    const apiEndpoint = 'https://0roow8lbp4.execute-api.af-south-1.amazonaws.com/auth/google';
+    const alertContainer = document.getElementById('alert-container');
+    alertContainer.innerHTML = '';
 
-            // Send the idToken to YOUR backend Lambda function for verification.
-            const backendResponse = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ idToken: idToken }),
-            });
+    try {
+        document.body.classList.add('loading');
+        const backendResponse = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: idToken }),
+        });
 
-            const data = await backendResponse.json();
-
-            if (!backendResponse.ok) {
-                // If the backend returned an error (e.g., status 500 or 400),
-                // we'll use the message from the backend's response.
-                throw new Error(data.message || 'An unknown error occurred on the server.');
-            }
-
-            // --- SUCCESS ---
-            // If the backend verified the token successfully, it will send back a 200 OK response.
-            // Now, we can redirect the user to their profile page.
-            window.location.href = 'profile.html';
-
-        } catch (error) {
-            console.error('Login failed:', error);
-            // Display the error message in the alert container you created.
-            const errorHtml = `
-                <div class="alert error" style="margin-bottom: 20px;">
-                    <i class="fas fa-times-circle"></i>
-                    <div>
-                        <strong>Login Failed</strong>
-                        <p>${error.message}</p>
-                    </div>
-                </div>`;
-            alertContainer.innerHTML = errorHtml;
-        } finally {
-            // Always remove the loading state, whether it succeeded or failed.
-            document.body.classList.remove('loading');
+        const data = await backendResponse.json();
+        if (!backendResponse.ok) {
+            throw new Error(data.message || 'An unknown error occurred.');
         }
-    }
 
-    // You can add your other functions like forgotPassword(), etc. here
-    function forgotPassword() {
-        // Your forgot password logic
-        console.log("Forgot password clicked");
+        // --- SUCCESS ---
+        // 1. SAVE the user data from the backend to sessionStorage
+        sessionStorage.setItem('userProfile', JSON.stringify(data.user));
+
+        // 2. NOW, redirect to the profile page
+        window.location.href = 'profile.html';
+
+    } catch (error) {
+        console.error('Login failed:', error);
+        const errorHtml = `
+            <div class="alert error" style="margin-bottom: 20px;">
+                <i class="fas fa-times-circle"></i>
+                <div>
+                    <strong>Login Failed</strong>
+                    <p>${error.message}</p>
+                </div>
+            </div>`;
+        alertContainer.innerHTML = errorHtml;
+    } finally {
+        document.body.classList.remove('loading');
     }
+}
 </script>
 
 </body>
